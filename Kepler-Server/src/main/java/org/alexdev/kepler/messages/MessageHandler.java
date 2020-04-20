@@ -214,6 +214,7 @@ public class MessageHandler {
         registerEvent(98, new LETUSERIN());
         registerEvent(261, new RATEFLAT());
         registerEvent(114, new PTM());
+        registerEvent(216, new ROOM_GETSPECTATORCOUNT()); // CX
     }
 
     /**

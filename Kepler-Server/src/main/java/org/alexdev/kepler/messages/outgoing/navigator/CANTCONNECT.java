@@ -10,7 +10,8 @@ public class CANTCONNECT extends MessageComposer {
         STAFF_ONLY("na"),
         EVENT_PARTICIPENTS_ONLY_COPY("e2"),
         EVENT_PARTICIPENTS_ONLY("e1"),
-        CLUB_ONLY("c");
+        CLUB_ONLY("c"),
+        FULL_QUEUE("dc");
 
         private final String reasonType;
 

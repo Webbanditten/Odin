@@ -156,8 +156,9 @@ public class RoomEntityManager {
                 this.room.send(new USER_OBJECTS(entity));
             }
         }
-
+        // THis is what spawns the player/item whatever
         this.room.getEntities().add(entity);
+        entity.getDetails().getId();
         this.room.getData().setVisitorsNow(this.room.getEntityManager().getPlayers().size());
 
 

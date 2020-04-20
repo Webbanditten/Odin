@@ -9,6 +9,8 @@ import org.alexdev.kepler.messages.outgoing.games.FULLGAMESTATUS;
 import org.alexdev.kepler.messages.outgoing.navigator.CANTCONNECT;
 import org.alexdev.kepler.messages.outgoing.navigator.CANTCONNECT.QueueError;
 import org.alexdev.kepler.messages.outgoing.rooms.OPEN_CONNECTION;
+import org.alexdev.kepler.messages.outgoing.rooms.user.QUEUETOROOM;
+import org.alexdev.kepler.messages.outgoing.rooms.user.YOUARESPECTATOR;
 import org.alexdev.kepler.messages.types.MessageEvent;
 import org.alexdev.kepler.server.netty.streams.NettyRequest;
 
@@ -45,10 +47,18 @@ public class ROOM_DIRECTORY implements MessageEvent {
             }
 
             if (room.getData().getTotalVisitorsNow() >= room.getData().getTotalVisitorsMax() && !player.hasFuse(Fuseright.ENTER_FULL_ROOMS)) {
-                player.send(new CANTCONNECT(QueueError.FULL));
+               /* if (room.getData().getCategoryId() == 3) {
+                    room.getEntityManager().enterRoom(player, null);
+
+                    //player.send(new QUEUETOROOM());
+                    //player.send(new YOUARESPECTATOR());
+                    //player.send(new CANTCONNECT(QueueError.FULL_QUEUE));
+                    return;
+                } else {*/
+                    player.send(new CANTCONNECT(QueueError.FULL));
+                /*}*/
                 return;
             }
-
             room.getEntityManager().enterRoom(player, null);
         }
      }

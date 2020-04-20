@@ -31,6 +31,7 @@ public class RoomData {
     private int visitorsMax;
     private boolean navigatorHide;
     private List<Room> childRooms;
+    private List<Integer> spectators;
     private int rating;
     private Game game;
 
