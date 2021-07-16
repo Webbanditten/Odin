@@ -11,6 +11,7 @@ import org.alexdev.kepler.game.pets.PetAction;
 import org.alexdev.kepler.game.pets.PetManager;
 import org.alexdev.kepler.game.pets.PetType;
 import org.alexdev.kepler.game.room.enums.StatusType;
+import org.alexdev.kepler.messages.outgoing.rooms.items.STUFFDATAUPDATE;
 import org.alexdev.kepler.util.DateUtil;
 
 import java.util.Collections;
@@ -18,6 +19,8 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import static org.alexdev.kepler.util.StringUtil.tryParseInt;
 
 public class RoomPet extends RoomEntity {
     private Pet pet;
@@ -39,6 +42,7 @@ public class RoomPet extends RoomEntity {
     }
 
 
+
     public void tryDrinking() {
         if (this.getRoom() == null) {
             return;
@@ -46,7 +50,7 @@ public class RoomPet extends RoomEntity {
 
         var room = this.getRoom();
         var bowlsInRoom = room.getItemManager().getFloorItems().stream().filter(item -> item.hasBehaviour(ItemBehaviour.PET_WATER_BOWL) &&
-                item.getCustomData().equalsIgnoreCase("1")).collect(Collectors.toList());
+                tryParseInt(item.getCustomData(), 0) > 0).collect(Collectors.toList());
 
         if (bowlsInRoom.size() < 1) {
             return;
@@ -66,6 +70,33 @@ public class RoomPet extends RoomEntity {
         }
 
         this.pet.setAction(PetAction.DRINK);
+        this.pet.setActionDuration(ThreadLocalRandom.current().nextInt(30));
+        this.item = item;
+    }
+
+    public void tryPlay() {
+        if (this.getRoom() == null) {
+            return;
+        }
+
+        var room = this.getRoom();
+        var toysInRoom = room.getItemManager().getFloorItems().stream().filter(item -> item.hasBehaviour(ItemBehaviour.PET_TOY)).collect(Collectors.toList());
+
+
+        Collections.shuffle(toysInRoom);
+        Item item = toysInRoom.get(0);
+
+        if (item == null) {
+            return;
+        }
+
+        this.pet.getRoomUser().walkTo(item.getPosition().getX(), item.getPosition().getY());
+
+        if (!this.pet.getRoomUser().isWalking()) {
+            return;
+        }
+
+        this.pet.setAction(PetAction.PLAY);
         this.pet.setActionDuration(ThreadLocalRandom.current().nextInt(30));
         this.item = item;
     }
@@ -118,38 +149,76 @@ public class RoomPet extends RoomEntity {
     public void stopWalking() {
         super.stopWalking();
 
-        if (this.pet.getAction() == PetAction.DRINK) {
-            if (this.item.getRoom() != null) {
-                this.getPosition().setRotation(this.item.getPosition().getRotation());
+        if (this.item.getRoom() != null) {
+            this.getPosition().setRotation(this.item.getPosition().getRotation());
 
-                this.setStatus(StatusType.EAT, "");
-                this.setNeedsUpdate(true);
-                this.emptyPetBowl(this.pet);
+            switch(this.pet.getAction()) {
+                case PLAY:
+                    this.setStatus(StatusType.PLAY, "");
+                    this.setNeedsUpdate(true);
+                    playWithToy(this.pet);
 
-                this.pet.getDetails().setLastDrink(DateUtil.getCurrentTimeSeconds());
-                PetDao.saveDetails(this.pet.getDetails().getId(), this.pet.getDetails());
-            } else {
-                this.pet.setAction(PetAction.NONE);
-                this.pet.setActionDuration(0);
+                    //this.pet.getDetails().setLastPlayToy(DateUtil.getCurrentTimeSeconds());
+                    //PetDao.saveDetails(this.pet.getDetails().getId(), this.pet.getDetails());
+                    break;
+                case DRINK:
+                    this.setStatus(StatusType.EAT, "");
+                    this.setNeedsUpdate(true);
+                    this.decreaseWaterInBowl(this.pet);
+
+                    this.pet.getDetails().setLastDrink(DateUtil.getCurrentTimeSeconds());
+                    PetDao.saveDetails(this.pet.getDetails().getId(), this.pet.getDetails());
+                    break;
+                case EAT:
+                    this.setStatus(StatusType.EAT, "");
+                    this.setNeedsUpdate(true);
+                    removeFoodItem(this.pet);
+
+                    this.pet.getDetails().setLastEat(DateUtil.getCurrentTimeSeconds());
+                    PetDao.saveDetails(this.pet.getDetails().getId(), this.pet.getDetails());
+                    break;
             }
-        }
-
-        if (this.pet.getAction() == PetAction.EAT) {
-            if (this.item.getRoom() != null) {
-                this.getPosition().setRotation(this.item.getPosition().getRotation());
-
-                this.setStatus(StatusType.EAT, "");
-                this.setNeedsUpdate(true);
-                removeFoodItem(this.pet);
-
-                this.pet.getDetails().setLastEat(DateUtil.getCurrentTimeSeconds());
-                PetDao.saveDetails(this.pet.getDetails().getId(), this.pet.getDetails());
-            } else {
-                this.pet.setAction(PetAction.NONE);
-                this.pet.setActionDuration(0);
-            }
+        } else {
+            this.pet.setAction(PetAction.NONE);
+            this.pet.setActionDuration(0);
         }
     }
+
+    private void decreaseWaterInBowl(final Pet pet) {
+        GameScheduler.getInstance().getService().schedule(()-> {
+            if (item.getRoom() != null) {
+                int customDataInt = tryParseInt(item.getCustomData(), 0);
+                if(customDataInt > 0) {
+                    customDataInt--;
+                    item.setCustomData(Integer.toString(customDataInt));
+                }
+                item.updateStatus();
+                item.save();
+            }
+
+            pet.setAction(PetAction.NONE);
+            pet.setActionDuration(0);
+
+            removeStatus(StatusType.EAT);
+            setNeedsUpdate(true);
+        }, 5, TimeUnit.SECONDS);
+    }
+
+    private void playWithToy(final Pet pet) {
+        if (item.getRoom() != null) {
+            item.setCustomData("1");
+            item.updateStatus();
+            item.save();
+        }
+        GameScheduler.getInstance().getService().schedule(()-> {
+            pet.setAction(PetAction.NONE);
+            pet.setActionDuration(0);
+
+            removeStatus(StatusType.PLAY);
+            setNeedsUpdate(true);
+        }, 5, TimeUnit.SECONDS);
+    }
+
 
     private void emptyPetBowl(final Pet pet) {
         GameScheduler.getInstance().getService().schedule(()-> {

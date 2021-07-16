@@ -293,6 +293,12 @@ public class EntityTask implements Runnable {
                             }
                             break;
                         }
+                        case 2: {
+                            if(pet.wantsToPlay()) {
+                                pet.getRoomUser().tryPlay();
+                                return;
+                            }
+                        }
                     }
 
 

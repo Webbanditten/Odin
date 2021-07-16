@@ -63,6 +63,10 @@ public class Pet extends Entity {
         return this.getThirst() <= 2;
     }
 
+    public boolean wantsToPlay() {
+        return this.getHappiness() <= 3;
+    }
+
     public boolean isHungry() {
         return this.getHunger() <= 3;
     }
@@ -102,7 +106,7 @@ public class Pet extends Entity {
     }
 
     public boolean isDoingAction() {
-        return !hasActionExpired() && (this.petAction == PetAction.SLEEP || this.petAction == PetAction.EAT || this.petAction == PetAction.DRINK || this.petAction == PetAction.LAY || this.petAction == PetAction.SIT);
+        return !hasActionExpired() && (this.petAction == PetAction.SLEEP || this.petAction == PetAction.PLAY || this.petAction == PetAction.EAT || this.petAction == PetAction.DRINK || this.petAction == PetAction.LAY || this.petAction == PetAction.SIT);
     }
 
     public boolean isActionAllowed() {

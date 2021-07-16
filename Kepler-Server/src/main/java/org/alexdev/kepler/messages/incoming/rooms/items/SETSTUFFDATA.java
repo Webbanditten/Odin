@@ -112,6 +112,11 @@ public class SETSTUFFDATA implements MessageEvent {
             if (item.getDefinition().getSprite().startsWith("waterbowl") && itemData.equals("5")) {
                 newData = itemData;
             }
+            // Special handler because we don't want to allow users to play with balls only pets can
+            if (item.getDefinition().getSprite().startsWith("toy")) {
+                newData = itemData;
+            }
+
 
             if (item.hasBehaviour(ItemBehaviour.CUSTOM_DATA_NUMERIC_STATE)) {
                 if (itemData.equals("x")) {

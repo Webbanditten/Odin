@@ -9,7 +9,8 @@ public enum PetAction {
     SIT(0),
     LAY(0),
     JUMP(0),
-    DEAD(0);
+    DEAD(0),
+    PLAY(0);
 
     private final int actionLength;
 

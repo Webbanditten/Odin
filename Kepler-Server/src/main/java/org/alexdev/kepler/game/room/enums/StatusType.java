@@ -20,6 +20,7 @@ public enum StatusType {
     TRADE("trd"),
     SIGN("sign"),
     DEAD("ded"),
+    PLAY("pla"),
     JUMP("jmp"),
     PET_SLEEP("slp"),
     EAT("eat");

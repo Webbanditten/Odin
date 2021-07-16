@@ -2,6 +2,7 @@ package org.alexdev.kepler.game.item.base;
 
 public enum ItemBehaviour {
     SOLID,
+    PET_TOY,
     CAN_STACK_ON_TOP,
     CAN_SIT_ON_TOP,
     CAN_STAND_ON_TOP,
