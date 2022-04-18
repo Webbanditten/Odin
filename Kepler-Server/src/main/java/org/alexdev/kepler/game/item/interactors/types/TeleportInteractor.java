@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 public class TeleportInteractor extends GenericTrigger {
     public static final String TELEPORTER_CLOSE = "FALSE";
     public static final String TELEPORTER_OPEN = "TRUE";
-    //public static final String TELEPORTER_EFFECTS = "2";
+    public static final String TELEPORTER_EFFECTS = "2";
 
     private void debugTeleporter(String msg) {
         //System.out.println(msg);
@@ -96,8 +96,8 @@ public class TeleportInteractor extends GenericTrigger {
                 item.setCustomData(TELEPORTER_CLOSE);
                 item.updateStatus();
 
-                //this.debugTeleporter("SEND LOGOUT");
-                //room.send(new LOGOUT(player.getRoomUser().getInstanceId()));
+                this.debugTeleporter("SEND LOGOUT");
+                room.send(new LOGOUT(player.getRoomUser().getInstanceId()));
             }, 1, TimeUnit.SECONDS);
 
             GameScheduler.getInstance().getService().schedule(() -> {
@@ -170,7 +170,7 @@ public class TeleportInteractor extends GenericTrigger {
                 return;
             }
 
-            //room.send(new LOGOUT(player.getRoomUser().getInstanceId()));
+            room.send(new LOGOUT(player.getRoomUser().getInstanceId()));
             item.setCustomData(TELEPORTER_CLOSE);
             item.updateStatus();
 
@@ -178,6 +178,9 @@ public class TeleportInteractor extends GenericTrigger {
                 roomUser.setAuthenticateId(pairedTeleporter.getRoom().getId());
                 this.debugTeleporter("ENTER ROOM 2");
                 player.send(new DOORFLAT(pairedTeleporter.getId(), pairedTeleporter.getRoomId()));
+                pairedTeleporter.setCustomData(TELEPORTER_EFFECTS);
+                pairedTeleporter.updateStatus();
+                pairedTeleporter.getRoom().send(new BROADCAST_TELEPORTER(pairedTeleporter, player.getDetails().getName(), false));
                 //pairedTeleporter.getRoom().getEntityManager().enterRoom(player, null);
                 //pairedTeleporter.getRoom().forward(player, false);
             } else {
@@ -201,7 +204,6 @@ public class TeleportInteractor extends GenericTrigger {
                 /*if (roomUser.getAuthenticateTelporterId() == -1) {
                     return;
                 }*/
-
                 pairedTeleporter.setCustomData(TELEPORTER_OPEN);
                 pairedTeleporter.updateStatus();
 

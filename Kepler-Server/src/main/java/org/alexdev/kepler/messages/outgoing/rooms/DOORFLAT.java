@@ -14,7 +14,6 @@ public class DOORFLAT extends MessageComposer {
 
     @Override
     public void compose(NettyResponse response) {
-        System.out.println("TELEID: " + teleId + "; FLATID: " + flatID);
         response.writeInt(this.teleId);
         response.writeInt(this.flatID);
     }
