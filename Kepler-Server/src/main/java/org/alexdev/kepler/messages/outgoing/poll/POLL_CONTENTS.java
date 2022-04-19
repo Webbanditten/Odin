@@ -24,6 +24,8 @@ public class POLL_CONTENTS extends MessageComposer {
         response.writeInt(3);
 
 
+
+
         // questionID
         response.writeInt(1);
         // questionNumber
@@ -57,7 +59,7 @@ public class POLL_CONTENTS extends MessageComposer {
         // minSelect
         response.writeInt(0);
         // maxSelect
-        response.writeInt(0);
+        response.writeInt(3);
         // questionText
         response.writeString("Nokia");
         response.writeString("Sony");
