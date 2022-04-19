@@ -5,6 +5,7 @@ import org.alexdev.kepler.game.fuserights.Fuseright;
 import org.alexdev.kepler.game.player.Player;
 import org.alexdev.kepler.game.room.Room;
 import org.alexdev.kepler.game.room.RoomManager;
+import org.alexdev.kepler.messages.outgoing.poll.POLL_OFFER;
 import org.alexdev.kepler.messages.outgoing.rooms.FLATNOTALLOWEDTOENTER;
 import org.alexdev.kepler.messages.outgoing.rooms.DOORBELL_WAIT;
 import org.alexdev.kepler.messages.outgoing.rooms.FLAT_LETIN;
@@ -16,6 +17,9 @@ import org.apache.commons.lang3.StringUtils;
 public class TRYFLAT implements MessageEvent {
     @Override
     public void handle(Player player, NettyRequest reader) {
+        // TODO REMOVE
+        player.send(new POLL_OFFER());
+
         int roomId = -1;
 
         String contents = reader.contents();

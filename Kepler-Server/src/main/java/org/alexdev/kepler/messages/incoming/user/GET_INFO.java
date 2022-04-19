@@ -11,10 +11,6 @@ public class GET_INFO implements MessageEvent {
 
     @Override
     public void handle(Player player, NettyRequest reader) {
-
-        // TODO REMOVE
-        player.send(new POLL_OFFER());
-
         player.send(new USER_OBJECT(player.getVersion(), player.getDetails()));
         if(player.getDetails().getEmail().length() == 0) {
             player.send(new UPDATE_REQUEST());

@@ -21,7 +21,7 @@ import org.alexdev.kepler.messages.incoming.jukebox.*;
 import org.alexdev.kepler.messages.incoming.messenger.*;
 import org.alexdev.kepler.messages.incoming.moderation.*;
 import org.alexdev.kepler.messages.incoming.navigator.*;
-import org.alexdev.kepler.messages.incoming.poll.POLL_START;
+import org.alexdev.kepler.messages.incoming.poll.*;
 import org.alexdev.kepler.messages.incoming.purse.GETUSERCREDITLOG;
 import org.alexdev.kepler.messages.incoming.purse.REDEEM_VOUCHER;
 import org.alexdev.kepler.messages.incoming.recycler.CONFIRM_FURNI_RECYCLING;
@@ -130,6 +130,8 @@ public class MessageHandler {
      */
     private void registerPollPackets() {
         registerEvent(234, new POLL_START());
+        registerEvent(235, new POLL_REJECT());
+        registerEvent(236, new POLL_ANSWER());
     }
 
     /**

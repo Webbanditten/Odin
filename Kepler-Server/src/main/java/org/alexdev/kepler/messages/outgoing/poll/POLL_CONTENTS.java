@@ -21,7 +21,7 @@ public class POLL_CONTENTS extends MessageComposer {
         response.writeString("Tak fordi du deltog i afstemningen!");
 
         // Question count
-        response.writeInt(2);
+        response.writeInt(3);
 
 
         // questionID
@@ -29,9 +29,9 @@ public class POLL_CONTENTS extends MessageComposer {
         // questionNumber
         response.writeInt(1);
         // questionType
-        response.writeInt(2);
+        response.writeInt(1);
         // questionText
-        response.writeString(StringUtil.charsetEncode("æøå"));
+        response.writeString("æøå"); //response.writeString(StringUtil.charsetEncode("æøå"));
         // tSelectionCount
         response.writeInt(2);
         // minSelect
@@ -44,9 +44,6 @@ public class POLL_CONTENTS extends MessageComposer {
 
 
 
-
-
-
         // questionID
         response.writeInt(2);
         // questionNumber
@@ -54,17 +51,30 @@ public class POLL_CONTENTS extends MessageComposer {
         // questionType
         response.writeInt(1);
         // questionText
-        response.writeString(StringUtil.charsetEncode("Vælg dine favorit mærker"));
+        response.writeString("Vælg dine favorit mærker");
         // tSelectionCount
         response.writeInt(3);
         // minSelect
-        response.writeInt(1);
+        response.writeInt(0);
         // maxSelect
-        response.writeInt(2);
+        response.writeInt(0);
         // questionText
         response.writeString("Nokia");
         response.writeString("Sony");
         response.writeString("Apple");
+
+
+
+
+        // questionID
+        response.writeInt(3);
+        // questionNumber
+        response.writeInt(3);
+        // questionType
+        response.writeInt(3);
+        // questionText
+        response.writeString("Skriv noget"); //response.writeString(StringUtil.charsetEncode("æøå"));
+
 
     }
 
