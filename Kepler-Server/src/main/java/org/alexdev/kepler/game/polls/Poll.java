@@ -1,5 +1,7 @@
 package org.alexdev.kepler.game.polls;
 
+import org.alexdev.kepler.dao.mysql.PollDao;
+
 import java.util.List;
 
 public class Poll {
@@ -7,13 +9,12 @@ public class Poll {
     private String headline;
     private String thankYou;
     private String description;
-    private List<PollQuestion> questions;
-    public Poll(int id, String headline, String thankYou, String description, List<PollQuestion> questions) {
+
+    public Poll(int id, String headline, String thankYou, String description) {
         this.id = id;
         this.headline = headline;
         this.thankYou = thankYou;
         this.description = description;
-        this.questions = questions;
     }
 
     public int getId() {
@@ -29,6 +30,10 @@ public class Poll {
         return description;
     }
     public List<PollQuestion> getQuestions() {
-        return questions;
+        return PollDao.getPollQuestions(this.id);
+    }
+
+    public void sendAvailablePoll(int userId, int roomId) {
+        PollDao.get
     }
 }
