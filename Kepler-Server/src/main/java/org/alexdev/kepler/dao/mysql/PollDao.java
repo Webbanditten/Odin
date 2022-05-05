@@ -8,7 +8,7 @@ import java.util.List;
 
 public class PollDao {
 
-    public static Poll getPoll(int userId) {
+    public static Poll getPoll(int pollId) {
         Connection sqlConnection = null;
         PreparedStatement preparedStatement = null;
         ResultSet resultSet = null;
@@ -17,8 +17,8 @@ public class PollDao {
 
         try {
             sqlConnection = Storage.getStorage().getConnection();
-            preparedStatement = Storage.getStorage().prepare("SELECT * FROM polls WHERE id NOT IN (SELECT id FROM polls_offers where user_id = ?) limit 1;", sqlConnection);
-            preparedStatement.setInt(1, userId);
+            preparedStatement = Storage.getStorage().prepare("SELECT * FROM polls WHERE id = ? limit 1;", sqlConnection);
+            preparedStatement.setInt(1, pollId);
             resultSet = preparedStatement.executeQuery();
 
             if (resultSet.next()) {
@@ -42,6 +42,7 @@ public class PollDao {
     }
 
     public static List<PollQuestion> getPollQuestions(int pollId) {
+        // SELECT * FROM polls_triggers WHERE poll_id NOT IN (SELECT poll_id FROM polls_offers where user_id = 1) limit 1
         return null;
     }
 
@@ -49,7 +50,7 @@ public class PollDao {
         return null;
     }
 
-    public static List<PollTrigger> getPollTriggers() {
+    public static List<PollTrigger> getPollTrigger() {
         return null;
     }
 

@@ -33,7 +33,25 @@ public class Poll {
         return PollDao.getPollQuestions(this.id);
     }
 
-    public void sendAvailablePoll(int userId, int roomId) {
-        PollDao.get
+    public void sendAvailablePoll(int userId, Integer roomId) {
+        List<PollTrigger> triggers = PollDao.getPollTrigger();
+
+        for (PollTrigger trigger : triggers) {
+            if(trigger.getTimeFrom() != null && trigger.getTimeTo() != null) {
+                if(trigger.getRoomId() != null) {
+
+                } else {
+
+                }
+            } else {
+                if(trigger.getRoomId() != null) {
+
+                } else {
+
+                }
+            }
+
+        }
+
     }
 }

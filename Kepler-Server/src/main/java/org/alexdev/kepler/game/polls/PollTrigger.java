@@ -4,9 +4,9 @@ package org.alexdev.kepler.game.polls;
 public class PollTrigger {
     private int id;
     private int pollId;
-    private int roomId;
-    private int timeFrom;
-    private int timeTo;
+    private Integer roomId;
+    private Integer timeFrom;
+    private Integer timeTo;
 
     public PollTrigger(int id, int pollId, int roomId, int timeFrom, int timeTo) {
         this.id = id;
@@ -24,15 +24,15 @@ public class PollTrigger {
         return pollId;
     }
 
-    public int getRoomId() {
+    public Integer getRoomId() {
         return roomId;
     }
 
-    public int getTimeFrom() {
+    public Integer getTimeFrom() {
         return timeFrom;
     }
 
-    public int getTimeTo() {
+    public Integer getTimeTo() {
         return timeTo;
     }
 }
