@@ -2,8 +2,10 @@ package org.alexdev.kepler.dao.mysql;
 
 import org.alexdev.kepler.dao.Storage;
 import org.alexdev.kepler.game.polls.*;
+import org.alexdev.kepler.game.room.Room;
 
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.List;
 
 public class PollDao {
@@ -50,8 +52,56 @@ public class PollDao {
         return null;
     }
 
-    public static List<PollTrigger> getPollTrigger() {
-        return null;
+    public static List<PollTrigger> getPollTriggers(int userId) {
+        List<PollTrigger> triggers = new ArrayList<>();
+
+        Connection sqlConnection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+
+        try {
+            sqlConnection = Storage.getStorage().getConnection();
+            preparedStatement = Storage.getStorage().prepare("SELECT\n" +
+                    "pt.id as trigger_id,\n" +
+                    "pt.room,\n" +
+                    "pt.time_from,\n" +
+                    "pt.time_to,\n" +
+                    "p.id as poll_id,\n" +
+                    "p.headline,\n" +
+                    "p.thank_you,\n" +
+                    "p.description\n" +
+                    "FROM polls_triggers as pt\n" +
+                    "LEFT JOIN polls as p on pt.poll_id = p.id\n" +
+                    "WHERE p.id NOT IN (SELECT po.poll_id FROM polls_offers as po where po.user_id = ?);", sqlConnection);
+            preparedStatement.setInt(1, userId);
+            resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                PollTrigger trigger = new PollTrigger(
+                        resultSet.getInt("trigger_id"),
+                        resultSet.getInt("poll_id"),
+                        resultSet.getInt("room"),
+                        resultSet.getInt("time_from"),
+                        resultSet.getInt("time_to"),
+                        new Poll(
+                                resultSet.getInt("poll_id"),
+                                resultSet.getString("headline"),
+                                resultSet.getString("thank_you"),
+                                resultSet.getString("description")
+                        )
+                );
+                triggers.add(trigger);
+            }
+
+        } catch (Exception e) {
+            Storage.logError(e);
+        } finally {
+            Storage.closeSilently(resultSet);
+            Storage.closeSilently(preparedStatement);
+            Storage.closeSilently(sqlConnection);
+        }
+
+        return triggers;
     }
 
     public static void addAnswer(PollAnswer answer) {

@@ -17,9 +17,6 @@ import org.apache.commons.lang3.StringUtils;
 public class TRYFLAT implements MessageEvent {
     @Override
     public void handle(Player player, NettyRequest reader) {
-        // TODO REMOVE
-        player.send(new POLL_OFFER());
-
         int roomId = -1;
 
         String contents = reader.contents();
