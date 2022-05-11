@@ -8,11 +8,13 @@ public class PollQuestion {
     private int pollId;
     private PollQuestionType pollQuestionType;
     private List<PollQuestionOption> options;
+    private String text;
 
-    public PollQuestion(int id, int pollId, PollQuestionType pollQuestionType) {
+    public PollQuestion(int id, int pollId, PollQuestionType pollQuestionType, String text) {
         this.id = id;
         this.pollId = pollId;
         this.pollQuestionType = pollQuestionType;
+        this.text = text;
     }
 
     public int getId() {
@@ -33,4 +35,5 @@ public class PollQuestion {
     public PollQuestionType getPollQuestionType() {
         return pollQuestionType;
     }
+    public String getText() { return text; }
 }
