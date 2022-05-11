@@ -1,5 +1,6 @@
 package org.alexdev.kepler.messages.incoming.poll;
 
+import org.alexdev.kepler.dao.mysql.PollDao;
 import org.alexdev.kepler.game.player.Player;
 import org.alexdev.kepler.messages.outgoing.poll.POLL_CONTENTS;
 import org.alexdev.kepler.messages.types.MessageEvent;
@@ -16,7 +17,7 @@ public class POLL_REJECT implements MessageEvent {
         }
 
         Integer id = reader.readInt();
-        System.out.println("REJECTED POLL " + id);
+        PollDao.addOffer(id, player.getDetails().getId());
 
     }
 }

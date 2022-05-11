@@ -1,6 +1,8 @@
 package org.alexdev.kepler.messages.incoming.poll;
 
+import org.alexdev.kepler.dao.mysql.PollDao;
 import org.alexdev.kepler.game.player.Player;
+import org.alexdev.kepler.game.polls.Poll;
 import org.alexdev.kepler.messages.outgoing.poll.POLL_CONTENTS;
 import org.alexdev.kepler.messages.types.MessageEvent;
 import org.alexdev.kepler.server.netty.streams.NettyRequest;
@@ -16,9 +18,9 @@ public class POLL_START implements MessageEvent {
         }
 
         Integer id = reader.readInt();
-        System.out.println("START POLL WITH ID " + id);
-
-        player.send(new POLL_CONTENTS());
+        PollDao.addOffer(id, player.getDetails().getId());
+        Poll poll = PollDao.getPoll(id);
+        player.send(new POLL_CONTENTS(poll));
 
     }
 }

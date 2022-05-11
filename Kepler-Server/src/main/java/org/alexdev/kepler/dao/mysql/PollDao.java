@@ -2,7 +2,6 @@ package org.alexdev.kepler.dao.mysql;
 
 import org.alexdev.kepler.dao.Storage;
 import org.alexdev.kepler.game.polls.*;
-import org.alexdev.kepler.game.room.Room;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -44,12 +43,70 @@ public class PollDao {
     }
 
     public static List<PollQuestion> getPollQuestions(int pollId) {
-        // SELECT * FROM polls_triggers WHERE poll_id NOT IN (SELECT poll_id FROM polls_offers where user_id = 1) limit 1
-        return null;
+        Connection sqlConnection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+
+        List<PollQuestion> questions = new ArrayList<>();
+
+        try {
+            sqlConnection = Storage.getStorage().getConnection();
+            preparedStatement = Storage.getStorage().prepare("SELECT * FROM polls_questions WHERE id = ?", sqlConnection);
+            preparedStatement.setInt(1, pollId);
+            resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                questions.add(new PollQuestion(
+                        resultSet.getInt("id"),
+                        resultSet.getInt("poll_id"),
+                        PollQuestionType.valueOf(resultSet.getString("type")),
+                        resultSet.getString("text"),
+                        resultSet.getInt("min_select"),
+                        resultSet.getInt("max_select")
+                ));
+            }
+
+        } catch (Exception e) {
+            Storage.logError(e);
+        } finally {
+            Storage.closeSilently(resultSet);
+            Storage.closeSilently(preparedStatement);
+            Storage.closeSilently(sqlConnection);
+        }
+
+        return questions;
     }
 
-    public static List<PollQuestionOption> getPollQuestionOptions(int pollId) {
-        return null;
+    public static List<PollQuestionOption> getPollQuestionOptions(int questionId) {
+        Connection sqlConnection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+
+        List<PollQuestionOption> questionOptions = new ArrayList<>();
+
+        try {
+            sqlConnection = Storage.getStorage().getConnection();
+            preparedStatement = Storage.getStorage().prepare("SELECT * FROM polls_questions_options WHERE poll_question_id = ?", sqlConnection);
+            preparedStatement.setInt(1, questionId);
+            resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                questionOptions.add(new PollQuestionOption(
+                        resultSet.getInt("id"),
+                        resultSet.getString("name"),
+                        resultSet.getInt("poll_question_id")
+                ));
+            }
+
+        } catch (Exception e) {
+            Storage.logError(e);
+        } finally {
+            Storage.closeSilently(resultSet);
+            Storage.closeSilently(preparedStatement);
+            Storage.closeSilently(sqlConnection);
+        }
+
+        return questionOptions;
     }
 
     public static List<PollTrigger> getPollTriggers(int userId) {
@@ -114,6 +171,26 @@ public class PollDao {
 
             preparedStatement.setInt(1, answer.getPollQuestionId());
             preparedStatement.setString(2, answer.getValue());
+            preparedStatement.execute();
+
+        } catch (Exception e) {
+            Storage.logError(e);
+        } finally {
+            Storage.closeSilently(preparedStatement);
+            Storage.closeSilently(sqlConnection);
+        }
+    }
+
+    public static void addOffer(int pollId, int userId) {
+        Connection sqlConnection = null;
+        PreparedStatement preparedStatement = null;
+
+        try {
+            sqlConnection = Storage.getStorage().getConnection();
+            preparedStatement = Storage.getStorage().prepare("INSERT INTO polls_offers (poll_Id, user_id) VALUES (?, ?)", sqlConnection);
+
+            preparedStatement.setInt(1, pollId);
+            preparedStatement.setInt(2, userId);
             preparedStatement.execute();
 
         } catch (Exception e) {

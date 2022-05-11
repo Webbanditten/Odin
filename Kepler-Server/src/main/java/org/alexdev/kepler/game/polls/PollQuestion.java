@@ -9,12 +9,16 @@ public class PollQuestion {
     private PollQuestionType pollQuestionType;
     private List<PollQuestionOption> options;
     private String text;
+    private int maxSelect;
+    private int minSelect;
 
-    public PollQuestion(int id, int pollId, PollQuestionType pollQuestionType, String text) {
+    public PollQuestion(int id, int pollId, PollQuestionType pollQuestionType, String text, int minSelect, int maxSelect) {
         this.id = id;
         this.pollId = pollId;
         this.pollQuestionType = pollQuestionType;
         this.text = text;
+        this.minSelect = minSelect;
+        this.maxSelect = maxSelect;
     }
 
     public int getId() {
@@ -23,6 +27,12 @@ public class PollQuestion {
 
     public int getPollId() {
         return pollId;
+    }
+    public int getMaxSelect() {
+        return maxSelect;
+    }
+    public int getMinSelect() {
+        return minSelect;
     }
 
     public List<PollQuestionOption> getOptions() {
@@ -36,4 +46,5 @@ public class PollQuestion {
         return pollQuestionType;
     }
     public String getText() { return text; }
+
 }

@@ -33,53 +33,35 @@ public class Poll {
     public String getDescription() {
         return description;
     }
+
     public List<PollQuestion> getQuestions() {
-        return PollDao.getPollQuestions(this.id);
+        List<PollQuestion> questions = PollDao.getPollQuestions(this.id);
+        for (PollQuestion question : questions) {
+            question.addOptions(PollDao.getPollQuestionOptions(question.getId()));
+        }
+        return questions;
     }
 
     public static void sendAvailablePoll(Player player) {
 
         List<PollTrigger> triggers = PollDao.getPollTriggers(player.getDetails().getId());
-        for (PollTrigger trigger : triggers) {
-            System.out.println("GOT TRIGGERS FOR POLLS");
-            System.out.println(trigger.getPoll().headline);
-            System.out.println("WAt: " + trigger.getTimeTo());
-        }
         if(triggers.isEmpty()) return;
-
-        List<PollTrigger> triggersForRoom = new ArrayList<>();
-        List<PollTrigger> triggersWithNoRoom = new ArrayList<>();
-
-        for (PollTrigger trigger : triggers) {
-           if(trigger.getRoomId() != 0) {
-               triggersForRoom.add(trigger);
-           } else {
-                triggersWithNoRoom.add(trigger);
-           }
-        }
 
         List<PollTrigger> actualTriggers = new ArrayList<>();
 
-
-        for (PollTrigger trigger : triggersForRoom) {
+        for (PollTrigger trigger : triggers) {
             boolean hasTimeWindow = trigger.getTimeFrom() != 0 && trigger.getTimeTo() != 0;
-            System.out.println("hastimewindow: " + hasTimeWindow);
-            boolean isWithinTimeWindow = hasTimeWindow ? !(DateUtil.getCurrentTimeSeconds() >= trigger.getTimeFrom() && DateUtil.getCurrentTimeSeconds() <= trigger.getTimeTo()) : true;
-            System.out.println("isWithinTime: " + isWithinTimeWindow);
+            boolean isWithinTimeWindow = !hasTimeWindow || !(DateUtil.getCurrentTimeSeconds() >= trigger.getTimeFrom() && DateUtil.getCurrentTimeSeconds() <= trigger.getTimeTo());
             if(isWithinTimeWindow) {
                 if(trigger.getRoomId() == player.getRoomUser().getRoom().getId()) {
-                    System.out.println("ADDED TRIGGER TO ACUTAL TRIGGERS");
                     actualTriggers.add(trigger);
                 } else if(trigger.getRoomId() == 0) {
-                    System.out.println("ADDED TRIGGER TO ACUTAL TRIGGERS 2");
                     actualTriggers.add(trigger);
                 }
             }
         }
 
-
         if(!actualTriggers.isEmpty()) {
-            System.out.println("ADDED TRIGGER TO ACUTAL TRIGGERS");
             PollTrigger pollTrigger = actualTriggers.get(0);
             player.send(new POLL_OFFER(pollTrigger.getPoll().getId(), pollTrigger.getPoll().getDescription()));
         }
