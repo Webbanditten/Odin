@@ -6,6 +6,11 @@ public class PollAnswer {
     private int pollQuestionId;
     private String value;
 
+    public PollAnswer(int pollQuestionId, String value) {
+        this.pollQuestionId = pollQuestionId;
+        this.value = value;
+    }
+
     public PollAnswer(int id, int pollQuestionId, String value) {
         this.id = id;
         this.pollQuestionId = pollQuestionId;

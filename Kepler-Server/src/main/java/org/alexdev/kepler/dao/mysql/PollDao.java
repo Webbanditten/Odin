@@ -51,7 +51,7 @@ public class PollDao {
 
         try {
             sqlConnection = Storage.getStorage().getConnection();
-            preparedStatement = Storage.getStorage().prepare("SELECT * FROM polls_questions WHERE id = ?", sqlConnection);
+            preparedStatement = Storage.getStorage().prepare("SELECT * FROM polls_questions WHERE poll_id = ?", sqlConnection);
             preparedStatement.setInt(1, pollId);
             resultSet = preparedStatement.executeQuery();
 
@@ -202,4 +202,38 @@ public class PollDao {
     }
 
 
+    public static PollQuestion getQuestion(int questionId) {
+        Connection sqlConnection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+
+        PollQuestion question = null;
+
+        try {
+            sqlConnection = Storage.getStorage().getConnection();
+            preparedStatement = Storage.getStorage().prepare("SELECT * FROM polls_questions WHERE id = ? limit 1;", sqlConnection);
+            preparedStatement.setInt(1, questionId);
+            resultSet = preparedStatement.executeQuery();
+
+            if (resultSet.next()) {
+                question = new PollQuestion(
+                        resultSet.getInt("id"),
+                        resultSet.getInt("poll_id"),
+                        PollQuestionType.valueOf(resultSet.getString("type")),
+                        resultSet.getString("text"),
+                        resultSet.getInt("min_select"),
+                        resultSet.getInt("max_select")
+                );
+            }
+
+        } catch (Exception e) {
+            Storage.logError(e);
+        } finally {
+            Storage.closeSilently(resultSet);
+            Storage.closeSilently(preparedStatement);
+            Storage.closeSilently(sqlConnection);
+        }
+
+        return question;
+    }
 }

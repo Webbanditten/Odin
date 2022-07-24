@@ -53,7 +53,7 @@ public class Poll {
             boolean hasTimeWindow = trigger.getTimeFrom() != 0 && trigger.getTimeTo() != 0;
             boolean isWithinTimeWindow = !hasTimeWindow || !(DateUtil.getCurrentTimeSeconds() >= trigger.getTimeFrom() && DateUtil.getCurrentTimeSeconds() <= trigger.getTimeTo());
             if(isWithinTimeWindow) {
-                if(player.getRoomUser() != null && trigger.getRoomId() == player.getRoomUser().getRoom().getId()) {
+                if((player.getRoomUser() != null && player.getRoomUser().getRoom() != null) && trigger.getRoomId() == player.getRoomUser().getRoom().getId()) {
                     actualTriggers.add(trigger);
                 } else if(trigger.getRoomId() == 0) {
                     actualTriggers.add(trigger);

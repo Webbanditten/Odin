@@ -23,10 +23,6 @@ public class POLL_CONTENTS extends MessageComposer {
 
     @Override
     public void compose(NettyResponse response) {
-
-
-
-
         // tPollID
         response.writeInt(this.poll.getId());
         // tPollHeadLine

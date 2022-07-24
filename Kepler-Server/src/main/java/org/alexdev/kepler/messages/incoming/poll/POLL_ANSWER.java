@@ -1,10 +1,13 @@
 package org.alexdev.kepler.messages.incoming.poll;
 
+import org.alexdev.kepler.dao.mysql.PollDao;
 import org.alexdev.kepler.game.player.Player;
+import org.alexdev.kepler.game.polls.*;
 import org.alexdev.kepler.messages.types.MessageEvent;
 import org.alexdev.kepler.server.netty.streams.NettyRequest;
 
 import java.sql.SQLException;
+import java.util.List;
 
 public class POLL_ANSWER implements MessageEvent {
 
@@ -14,26 +17,31 @@ public class POLL_ANSWER implements MessageEvent {
             return;
         }
         Integer id = reader.readInt();
-        System.out.println("POLL ANSWER - POLL ID: " + id);
         Integer questionId = reader.readInt();
-        System.out.println("POLL ANSWER - QUESTION ID: " + questionId);
 
+        System.out.println("ID: " + id);
+        System.out.println("questionId: " + questionId);
 
-        if(questionId == 2 || questionId == 1) {
+        PollQuestion question = PollDao.getQuestion(questionId);
+        if(question == null) return;
+
+        List<PollQuestionOption> questionOptions = PollDao.getPollQuestionOptions(question.getId());
+        if(question.getPollQuestionType() == PollQuestionType.CHOICE) {
+            // amountSelected
             Integer amountSelected = reader.readInt();
-            System.out.println("POLL ANSWER - AMOUNT SELECTED: " + amountSelected);
-
             for(Integer i = 0; i < amountSelected; i++) {
                 Integer selectedIndex = reader.readInt();
-                System.out.println("POLL ANSWER - SELECTED: " + selectedIndex);
+                if(questionOptions != null) {
+                    PollQuestionOption option = questionOptions.get(selectedIndex-1);
+                    if(option != null) {
+                        PollDao.addAnswer(new PollAnswer(question.getId(), Integer.toString(option.getId())));
+                    }
+                }
             }
-
-        }
-
-        if(questionId == 3) {
+        } else {
             String text = reader.readString();
-            System.out.println("POLL ANSWER - TEXT: " + text);
+            // THIS IS WRONG FIX IT LATER
+            PollDao.addAnswer(new PollAnswer(question.getId(), text));
         }
-
     }
 }
