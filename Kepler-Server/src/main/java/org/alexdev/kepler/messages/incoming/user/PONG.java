@@ -1,6 +1,8 @@
 package org.alexdev.kepler.messages.incoming.user;
 
 import org.alexdev.kepler.game.player.Player;
+import org.alexdev.kepler.game.polls.Poll;
+import org.alexdev.kepler.messages.outgoing.poll.POLL_OFFER;
 import org.alexdev.kepler.messages.types.MessageEvent;
 import org.alexdev.kepler.server.netty.streams.NettyRequest;
 
@@ -9,5 +11,10 @@ public class PONG implements MessageEvent {
     public void handle(Player player, NettyRequest reader) {
         // Nice pong :^)
         player.setPingOK(true);
+
+        Poll.sendAvailablePoll(player);
+
+
+
     }
 }

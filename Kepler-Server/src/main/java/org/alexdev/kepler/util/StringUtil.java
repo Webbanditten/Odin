@@ -3,6 +3,7 @@ package org.alexdev.kepler.util;
 import org.alexdev.kepler.game.GameScheduler;
 import org.alexdev.kepler.util.config.GameConfiguration;
 
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.Normalizer;
@@ -92,6 +93,17 @@ public class StringUtil {
     public static List<String> split(String str, String delim) {
         return new ArrayList<>(Arrays.asList(str.split(delim)));
     }
+
+    public static String charsetEncode (String input){
+        String output = "";
+        try {
+            output = new String(input.getBytes("ISO-8859-1"), "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return output;
+    }
+
 
     /**
      * Get encoding for strings
