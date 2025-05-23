@@ -68,9 +68,10 @@ public class ChatManager {
             msg.put("roomId", room.getId());
             msg.put("sentTime", DateUtil.getCurrentTimeSeconds());
             msg.put("username", player.getDetails().getName());
+            msg.put("eventType", "chat");
             // Using gson to convert the object to a json string
             String messageJson = new Gson().toJson(msg);
-            HabboActivityQueueSingleton.getInstance().publishMessage("chat", messageJson);
+            HabboActivityQueueSingleton.getInstance().publishMessage(messageJson);
         } catch(Exception e) {
             log.error("Failed to setup RabbitMQ", e);
         }

@@ -212,9 +212,10 @@ public class InfobusManager {
         msg.put("options", this.options);
         msg.put("votes", this.votes);
         msg.put("door", this.isDoorOpen);
+        msg.put("eventType", "infobus");
         // Using gson to convert the object to a json string
         String messageJson = new Gson().toJson(msg);
-        HabboActivityQueueSingleton.getInstance().publishMessage("infobus", messageJson);
+        HabboActivityQueueSingleton.getInstance().publishMessage(messageJson);
     }
 
 }

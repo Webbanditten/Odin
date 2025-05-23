@@ -1,5 +1,6 @@
 package org.alexdev.kepler.server.rabbitmq;
 
+import com.rabbitmq.client.BuiltinExchangeType;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
@@ -42,9 +43,9 @@ public class HabboActivityQueueSingleton {
             factory.setClientProperties(clientProperties);
             connection = factory.newConnection();
             channel = connection.createChannel();
-            channel.exchangeDeclare(exchangeName, "topic", false);
+            channel.exchangeDeclare(exchangeName, BuiltinExchangeType.FANOUT, false);
             channel.queueDeclare(queueName, false, false, false, null);
-            channel.queueBind(queueName, exchangeName, "chat");
+            channel.queueBind(queueName, exchangeName, "");
         } catch (Exception e) {
             log.error("Failed to initialize RabbitMQ connection factory", e);
         }
@@ -57,9 +58,9 @@ public class HabboActivityQueueSingleton {
         return instance;
     }
 
-    public void publishMessage(String routingKey, String message) {
+    public void publishMessage(String message) {
         try {
-            channel.basicPublish(exchangeName, routingKey, null, message.getBytes(StandardCharsets.UTF_8));
+            channel.basicPublish(exchangeName, "", null, message.getBytes(StandardCharsets.UTF_8));
         } catch (Exception e) {
             log.error("Failed to publish message to RabbitMQ", e);
         }
