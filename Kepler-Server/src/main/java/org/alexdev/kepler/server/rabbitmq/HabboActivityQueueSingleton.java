@@ -18,7 +18,7 @@ public class HabboActivityQueueSingleton {
     private Connection connection;
     private Channel channel;
     private static final String exchangeName = "habbo_activity";
-    private static final String queueName = "activity";
+    private static final String queueName = "";
 
     private HabboActivityQueueSingleton() {
         try {
@@ -42,7 +42,7 @@ public class HabboActivityQueueSingleton {
             factory.setClientProperties(clientProperties);
             connection = factory.newConnection();
             channel = connection.createChannel();
-            channel.exchangeDeclare(exchangeName, "direct", true);
+            channel.exchangeDeclare(exchangeName, "topic", false);
             channel.queueDeclare(queueName, false, false, false, null);
             channel.queueBind(queueName, exchangeName, "chat");
         } catch (Exception e) {
