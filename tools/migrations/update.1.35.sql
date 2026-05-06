@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS `calls_for_help` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `caller_id` INT(11) NOT NULL,
+  `caller_username` VARCHAR(255) NOT NULL,
+  `message` TEXT NOT NULL,
+  `room_id` INT(11) NOT NULL DEFAULT 0,
+  `room_name` VARCHAR(255) NOT NULL DEFAULT '',
+  `category` INT(11) NOT NULL DEFAULT 2,
+  `picked_up_by` INT(11) NOT NULL DEFAULT 0,
+  `picked_up_username` VARCHAR(255) DEFAULT NULL,
+  `picked_up_at` DATETIME DEFAULT NULL,
+  `closed_at` DATETIME DEFAULT NULL,
+  `closed_reason` ENUM('replied', 'cancelled', 'expired') DEFAULT NULL,
+  `reply_message` TEXT DEFAULT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `idx_caller_id` (`caller_id`),
+  INDEX `idx_created_at` (`created_at`),
+  INDEX `idx_picked_up_by` (`picked_up_by`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

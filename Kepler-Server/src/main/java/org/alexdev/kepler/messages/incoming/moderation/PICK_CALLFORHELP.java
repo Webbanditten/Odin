@@ -23,6 +23,5 @@ public class PICK_CALLFORHELP implements MessageEvent {
         }
 
         CallForHelpManager.getInstance().pickUp(cfh, player);
-        //CallForHelpManager.getInstance().deleteCall(cfh);
     }
 }

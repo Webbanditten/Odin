@@ -19,7 +19,7 @@ public class DELETE_CRY implements MessageEvent {
         }
 
         // Delete call for help
-        CallForHelpManager.getInstance().deleteCall(cfh);
+        CallForHelpManager.getInstance().deleteCall(cfh, "cancelled", null);
 
         // Notify client about the deleted call for help
         player.send(new CFH_ACK(null));
