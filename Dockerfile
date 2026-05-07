@@ -1,4 +1,4 @@
-FROM openjdk:12
+FROM eclipse-temurin:11-jre
 COPY ./dist /usr/src/app
 WORKDIR /usr/src/app
 EXPOSE 12322 12321
