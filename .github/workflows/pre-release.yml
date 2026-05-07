@@ -1,19 +1,19 @@
-name: Create Pre-Release
+name: Pre-Release
 
 on:
-  push:
+  pull_request:
     branches:
       - "master"
 
 jobs:
   pre-release:
     permissions: write-all
-    
-    name: "Pre Release"
+    name: "Pre-Release Build"
     runs-on: "ubuntu-latest"
 
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up JDK 11
         uses: actions/setup-java@v4
         with:
@@ -30,11 +30,11 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew fatJar
 
-      - id: sha-short
-        name: Get short SHA
-        run: echo "::set-output name=sha-short::$(git rev-parse --short HEAD)"
+      - name: Get short SHA
+        id: sha-short
+        run: echo "sha-short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
-      - name: Copy jar to latest release
+      - name: Copy jar to dist
         run: cp -rf Kepler-Server/build/libs/Kepler-Server-all.jar dist/Kepler-Server-all.jar
 
       - name: Login to GitHub Container Registry
@@ -50,7 +50,52 @@ jobs:
           context: .
           platforms: linux/amd64
           push: true
-          # Both latest and sha
           tags: |
-            ghcr.io/webbanditten/kepler:latest
+            ghcr.io/webbanditten/kepler:pr-${{ github.event.pull_request.number }}
             ghcr.io/webbanditten/kepler:${{ steps.sha-short.outputs.sha-short }}
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = '${{ steps.sha-short.outputs.sha-short }}';
+            const prNumber = '${{ github.event.pull_request.number }}';
+            const image = `ghcr.io/webbanditten/kepler`;
+
+            const body = `### Pre-Release Build Ready
+
+            | Tag | Image |
+            |-----|-------|
+            | SHA | \`${image}:${sha}\` |
+            | PR | \`${image}:pr-${prNumber}\` |
+
+            \`\`\`bash
+            docker pull ${image}:${sha}
+            \`\`\``;
+
+            // Find and update existing bot comment, or create new one
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes('Pre-Release Build Ready')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
