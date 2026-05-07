@@ -21,6 +21,7 @@ public class CallForHelp {
     private int category = 2;
     private long expireTime;
     private boolean isDeleted;
+    private int databaseId;
 
     CallForHelp(int cryId, int callerId, Room room, String message) {
         this.cryId = cryId;
@@ -92,5 +93,13 @@ public class CallForHelp {
 
     public void setDeleted(boolean deleted) {
         isDeleted = deleted;
+    }
+
+    public int getDatabaseId() {
+        return databaseId;
+    }
+
+    public void setDatabaseId(int databaseId) {
+        this.databaseId = databaseId;
     }
 }

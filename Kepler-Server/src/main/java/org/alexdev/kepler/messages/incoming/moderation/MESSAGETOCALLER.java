@@ -32,7 +32,7 @@ public class MESSAGETOCALLER implements MessageEvent {
         }
 
         // Call has been handled, delete it :)
-        CallForHelpManager.getInstance().deleteCall(cfh);
+        CallForHelpManager.getInstance().deleteCall(cfh, "replied", message);
 
         // Get callee of call for help
         Player caller = PlayerManager.getInstance().getPlayerById(cfh.getCaller());
