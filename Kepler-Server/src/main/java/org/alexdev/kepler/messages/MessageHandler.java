@@ -25,6 +25,7 @@ import org.alexdev.kepler.messages.incoming.jukebox.*;
 import org.alexdev.kepler.messages.incoming.messenger.*;
 import org.alexdev.kepler.messages.incoming.moderation.*;
 import org.alexdev.kepler.messages.incoming.navigator.*;
+import org.alexdev.kepler.messages.incoming.poll.*;
 import org.alexdev.kepler.messages.incoming.purse.GETUSERCREDITLOG;
 import org.alexdev.kepler.messages.incoming.purse.REDEEM_VOUCHER;
 import org.alexdev.kepler.messages.incoming.recycler.CONFIRM_FURNI_RECYCLING;
@@ -101,6 +102,7 @@ public class MessageHandler {
         registerGamePackets();
         registerJukeboxPackets();
         registerEcotronPackets();
+        registerPollPackets();
     }
 
     /**
@@ -126,6 +128,15 @@ public class MessageHandler {
         registerEvent(1003, new VERSIONCHECK());
         registerEvent(58, new LANGCHECK());
         registerEvent(6, new MACHINEID());
+    }
+
+    /**
+     * Register handshake packets.
+     */
+    private void registerPollPackets() {
+        registerEvent(234, new POLL_START());
+        registerEvent(235, new POLL_REJECT());
+        registerEvent(236, new POLL_ANSWER());
     }
 
     /**
