@@ -13,12 +13,14 @@ public class Poll {
     private String headline;
     private String thankYou;
     private String description;
+    private List<PollQuestion> questions;
 
     public Poll(int id, String headline, String thankYou, String description) {
         this.id = id;
         this.headline = headline;
         this.thankYou = thankYou;
         this.description = description;
+        this.questions = null;
     }
 
     public int getId() {
@@ -34,37 +36,54 @@ public class Poll {
         return description;
     }
 
+    /**
+     * Loads and caches questions with their options from the database.
+     * Subsequent calls return the cached list.
+     */
     public List<PollQuestion> getQuestions() {
-        List<PollQuestion> questions = PollDao.getPollQuestions(this.id);
-        for (PollQuestion question : questions) {
-            question.addOptions(PollDao.getPollQuestionOptions(question.getId()));
+        if (this.questions == null) {
+            this.questions = PollDao.getPollQuestions(this.id);
+            for (PollQuestion question : this.questions) {
+                question.addOptions(PollDao.getPollQuestionOptions(question.getId()));
+            }
         }
-        return questions;
+        return this.questions;
     }
 
+    /**
+     * Sends an available poll offer to the player if one exists that they
+     * haven't already seen, and that matches trigger conditions (room, time window).
+     */
     public static void sendAvailablePoll(Player player) {
-
         List<PollTrigger> triggers = PollDao.getPollTriggers(player.getDetails().getId());
-        if(triggers.isEmpty()) return;
+        if (triggers.isEmpty()) return;
 
-        List<PollTrigger> actualTriggers = new ArrayList<>();
+        List<PollTrigger> matchingTriggers = new ArrayList<>();
 
         for (PollTrigger trigger : triggers) {
             boolean hasTimeWindow = trigger.getTimeFrom() != 0 && trigger.getTimeTo() != 0;
-            boolean isWithinTimeWindow = !hasTimeWindow || !(DateUtil.getCurrentTimeSeconds() >= trigger.getTimeFrom() && DateUtil.getCurrentTimeSeconds() <= trigger.getTimeTo());
-            if(isWithinTimeWindow) {
-                if((player.getRoomUser() != null && player.getRoomUser().getRoom() != null) && trigger.getRoomId() == player.getRoomUser().getRoom().getId()) {
-                    actualTriggers.add(trigger);
-                } else if(trigger.getRoomId() == 0) {
-                    actualTriggers.add(trigger);
+
+            if (hasTimeWindow) {
+                long now = DateUtil.getCurrentTimeSeconds();
+                // Skip this trigger if we are OUTSIDE the time window
+                if (now < trigger.getTimeFrom() || now > trigger.getTimeTo()) {
+                    continue;
                 }
+            }
+
+            // Check room trigger: roomId 0 means "any room"
+            if (trigger.getRoomId() == 0) {
+                matchingTriggers.add(trigger);
+            } else if (player.getRoomUser() != null
+                    && player.getRoomUser().getRoom() != null
+                    && trigger.getRoomId() == player.getRoomUser().getRoom().getId()) {
+                matchingTriggers.add(trigger);
             }
         }
 
-        if(!actualTriggers.isEmpty()) {
-            PollTrigger pollTrigger = actualTriggers.get(0);
+        if (!matchingTriggers.isEmpty()) {
+            PollTrigger pollTrigger = matchingTriggers.get(0);
             player.send(new POLL_OFFER(pollTrigger.getPoll().getId(), pollTrigger.getPoll().getDescription()));
         }
-
     }
 }
