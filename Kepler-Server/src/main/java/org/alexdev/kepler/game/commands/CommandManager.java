@@ -64,6 +64,13 @@ public class CommandManager {
         this.commands.put(new String[] { "botstatus" }, new BotsStatusCommand());
         this.commands.put(new String[] { "botsreset" }, new BotsReset());
 
+        // Pet control panel commands (sent by the Shockwave client as CHAT messages)
+        this.commands.put(new String[] { "passivate" }, new PetPassivateCommand());
+        this.commands.put(new String[] { "activate" }, new PetActivateCommand());
+        this.commands.put(new String[] { "setdir" }, new PetSetDirCommand());
+        this.commands.put(new String[] { "actionon" }, new PetActionOnCommand());
+        this.commands.put(new String[] { "actionoff" }, new PetActionOffCommand());
+
         log.info("Loaded {} commands", commands.size());
     }
 
