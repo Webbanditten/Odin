@@ -1,6 +1,7 @@
 package org.alexdev.kepler.messages.incoming.rooms;
 
 import org.alexdev.kepler.dao.mysql.RoomDao;
+import org.alexdev.kepler.game.fuserights.Fuse;
 import org.alexdev.kepler.game.fuserights.Fuseright;
 import org.alexdev.kepler.game.item.Item;
 import org.alexdev.kepler.game.player.Player;
@@ -20,7 +21,7 @@ public class FLATPROPBYITEM implements MessageEvent {
             return;
         }
 
-        if (!room.isOwner(player.getDetails().getId()) && !player.hasFuse(Fuseright.ANY_ROOM_CONTROLLER)) {
+        if (!room.isOwner(player.getDetails().getId()) && !player.hasFuse(Fuse.ANY_ROOM_CONTROLLER)) {
             return;
         }
 
@@ -35,20 +36,22 @@ public class FLATPROPBYITEM implements MessageEvent {
             return;
         }
 
-        int value = Integer.parseInt(item.getCustomData());
-
         if (property.equals("wallpaper")) {
-            room.getData().setWallpaper(value);
+            room.getData().setWallpaper(Integer.parseInt(item.getCustomData()));
         }
 
         if (property.equals("floor")) {
-            room.getData().setFloor(value);
+            room.getData().setFloor(Integer.parseInt(item.getCustomData()));
+        }
+
+        if (property.equals("landscape")) {
+            room.getData().setLandscape(item.getCustomData());
         }
 
         item.delete();
         RoomDao.saveDecorations(room);
 
-        room.send(new FLATPROPERTY(property, value));
+        room.send(new FLATPROPERTY(property, item.getCustomData()));
         player.getInventory().getItems().remove(item);
     }
 }

@@ -1,6 +1,7 @@
 package org.alexdev.kepler.messages.incoming.songs;
 
 import org.alexdev.kepler.dao.mysql.SongMachineDao;
+import org.alexdev.kepler.game.fuserights.Fuse;
 import org.alexdev.kepler.game.fuserights.Fuseright;
 import org.alexdev.kepler.game.player.Player;
 import org.alexdev.kepler.game.room.Room;
@@ -11,8 +12,6 @@ import org.alexdev.kepler.messages.types.MessageEvent;
 import org.alexdev.kepler.server.netty.streams.NettyRequest;
 import org.alexdev.kepler.util.StringUtil;
 
-import static org.alexdev.kepler.messages.incoming.songs.SAVE_SONG_NEW.calculateSongLength;
-
 public class SAVE_SONG_EDIT implements MessageEvent {
     @Override
     public void handle(Player player, NettyRequest reader) throws Exception {
@@ -22,7 +21,7 @@ public class SAVE_SONG_EDIT implements MessageEvent {
 
         Room room = player.getRoomUser().getRoom();
 
-        if (!room.isOwner(player.getDetails().getId()) && !player.hasFuse(Fuseright.ANY_ROOM_CONTROLLER)) {
+        if (!room.isOwner(player.getDetails().getId()) && !player.hasFuse(Fuse.ANY_ROOM_CONTROLLER)) {
             return;
         }
 
@@ -47,7 +46,7 @@ public class SAVE_SONG_EDIT implements MessageEvent {
         String title = StringUtil.filterInput(reader.readString(), true);
         String data = StringUtil.filterInput(reader.readString(), true);
 
-        SongMachineDao.saveSong(songId, title, calculateSongLength(data), data);
+        SongMachineDao.saveSong(songId, title, SAVE_SONG.calculateSongLength(data), data);
 
         player.send(new SONG_UPDATE());
         player.send(new SONG_LIST(SongMachineDao.getSongList(room.getItemManager().getSoundMachine().getId())));

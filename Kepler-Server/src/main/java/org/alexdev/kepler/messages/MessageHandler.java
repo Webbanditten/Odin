@@ -3,6 +3,7 @@ package org.alexdev.kepler.messages;
 import org.alexdev.kepler.game.player.Player;
 import org.alexdev.kepler.game.room.RoomManager;
 import org.alexdev.kepler.log.Log;
+import org.alexdev.kepler.messages.incoming.pets.GETPETSTAT;
 import org.alexdev.kepler.messages.incoming.catalogue.GCAP;
 import org.alexdev.kepler.messages.incoming.catalogue.GCIX;
 import org.alexdev.kepler.messages.incoming.catalogue.GET_ALIAS_LIST;
@@ -11,6 +12,9 @@ import org.alexdev.kepler.messages.incoming.club.GET_CLUB;
 import org.alexdev.kepler.messages.incoming.club.SCR_GIFT_APPROVAL;
 import org.alexdev.kepler.messages.incoming.club.SUBSCRIBE_CLUB;
 import org.alexdev.kepler.messages.incoming.events.*;
+import org.alexdev.kepler.messages.incoming.pets.PET_CONTROL;
+import org.alexdev.kepler.messages.incoming.rooms.teleporter.GOVIADOOR;
+import org.alexdev.kepler.messages.incoming.rooms.teleporter.INTODOOR;
 import org.alexdev.kepler.messages.incoming.games.*;
 import org.alexdev.kepler.messages.incoming.handshake.*;
 import org.alexdev.kepler.messages.incoming.infobus.CHANGEWORLD;
@@ -41,10 +45,7 @@ import org.alexdev.kepler.messages.incoming.rooms.items.*;
 import org.alexdev.kepler.messages.incoming.rooms.moderation.*;
 import org.alexdev.kepler.messages.incoming.rooms.pool.*;
 import org.alexdev.kepler.messages.incoming.rooms.settings.*;
-import org.alexdev.kepler.messages.incoming.rooms.teleporter.DOORGOIN;
 import org.alexdev.kepler.messages.incoming.rooms.teleporter.GETDOORFLAT;
-import org.alexdev.kepler.messages.incoming.rooms.teleporter.GOVIADOOR;
-import org.alexdev.kepler.messages.incoming.rooms.teleporter.INTODOOR;
 import org.alexdev.kepler.messages.incoming.rooms.user.*;
 import org.alexdev.kepler.messages.incoming.songs.*;
 import org.alexdev.kepler.messages.incoming.trade.*;
@@ -83,6 +84,7 @@ public class MessageHandler {
         registerNavigatorPackets();
         registerRoomPackets();
         registerRoomUserPackets();
+        registerPetPackets();
         registerRoomBadgesPackets();
         registerRoomPoolPackets();
         registerRoomSettingsPackets();
@@ -123,6 +125,9 @@ public class MessageHandler {
         registerEvent(204, new SSO());
         registerEvent(4, new TRY_LOGIN());
         registerEvent(756, new TRY_LOGIN());
+        registerEvent(1003, new VERSIONCHECK());
+        registerEvent(58, new LANGCHECK());
+        registerEvent(6, new MACHINEID());
     }
 
     /**
@@ -254,6 +259,13 @@ public class MessageHandler {
         registerEvent(117, new IIM());
     }
 
+    /**
+     * Register pet packets.
+     */
+    private void registerPetPackets() {
+        registerEvent(128, new GETPETSTAT());
+        registerEvent(901, new PET_CONTROL());
+    }
 
     /**
      * Register room badges packets;
@@ -280,7 +292,6 @@ public class MessageHandler {
      * Register room item packets.
      */
     private void registerRoomItemPackets() {
-        registerEvent(128, new GETPETSTAT());
         registerEvent(90, new PLACESTUFF());
         registerEvent(73, new MOVESTUFF());
         registerEvent(67, new ADDSTRIPITEM());
@@ -292,6 +303,7 @@ public class MessageHandler {
         registerEvent(74, new SETSTUFFDATA());
         registerEvent(183, new CONVERT_FURNI_TO_CREDITS());
         registerEvent(76, new THROW_DICE());
+        registerEvent(314, new SET_RANDOM_STATE());
         registerEvent(77, new DICE_OFF());
         registerEvent(247, new SPIN_WHEEL_OF_FORTUNE());
         registerEvent(341, new MSG_ROOMDIMMER_GET_PRESETS());

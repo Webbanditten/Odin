@@ -1,9 +1,9 @@
 package org.alexdev.kepler.dao.mysql;
 
-import at.favre.lib.crypto.bcrypt.BCrypt;
 import com.goterl.lazysodium.interfaces.PwHash;
 import org.alexdev.kepler.Kepler;
 import org.alexdev.kepler.dao.Storage;
+import org.alexdev.kepler.game.fuserights.Fuseright;
 import org.alexdev.kepler.game.player.Player;
 import org.alexdev.kepler.game.player.PlayerDetails;
 import org.alexdev.kepler.game.tag.Tag;
@@ -11,10 +11,119 @@ import org.alexdev.kepler.util.DateUtil;
 
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class PlayerDao {
+
+
+    /**
+     * Resets the login streak for a given user
+     * @param userId
+     */
+    public static void resetLoginStreak(int userId) {
+        Connection sqlConnection = null;
+        PreparedStatement preparedStatement = null;
+
+        try {
+            sqlConnection = Storage.getStorage().getConnection();
+            preparedStatement = Storage.getStorage().prepare("UPDATE users SET login_streak = 0, last_streak = ? WHERE id = ?", sqlConnection);
+            preparedStatement.setInt(1, DateUtil.getCurrentTimeSeconds());
+            preparedStatement.setInt(2, userId);
+            preparedStatement.execute();
+
+        } catch (Exception e) {
+            Storage.logError(e);
+        } finally {
+            Storage.closeSilently(preparedStatement);
+            Storage.closeSilently(sqlConnection);
+        }
+    }
+
+    /**
+     * Increments the login streak for a given user
+     * @param userId
+     */
+    public static void incrementLoginStreak(int userId) {
+        Connection sqlConnection = null;
+        PreparedStatement preparedStatement = null;
+
+        try {
+            sqlConnection = Storage.getStorage().getConnection();
+            preparedStatement = Storage.getStorage().prepare("UPDATE users SET login_streak = login_streak + 1, last_streak = ? WHERE id = ?", sqlConnection);
+            preparedStatement.setInt(1, DateUtil.getCurrentTimeSeconds());
+            preparedStatement.setInt(2, userId);
+            preparedStatement.execute();
+
+        } catch (Exception e) {
+            Storage.logError(e);
+        } finally {
+            Storage.closeSilently(preparedStatement);
+            Storage.closeSilently(sqlConnection);
+        }
+    }
+    /**
+     * Logs the machine id for a given user
+     *
+     * @param userId the user id to edit
+     * @param machineId the machine id
+     */
+    public static void logMachineId(int userId, String machineId) {
+        Connection sqlConnection = null;
+        PreparedStatement preparedStatement = null;
+
+        try {
+            sqlConnection = Storage.getStorage().getConnection();
+            preparedStatement = Storage.getStorage().prepare("INSERT INTO users_machineid_logs (user_id, machine_id) VALUES (?, ?)", sqlConnection);
+            preparedStatement.setInt(1, userId);
+            preparedStatement.setString(2, machineId);
+            preparedStatement.execute();
+
+        } catch (Exception e) {
+            Storage.logError(e);
+        } finally {
+            Storage.closeSilently(preparedStatement);
+            Storage.closeSilently(sqlConnection);
+        }
+    }
+
+
+    /**
+     * Gets the machine for a given user
+     *
+     * @param userId the user id to edit
+     */
+    public static String getLatestMachineId(int userId) {
+        Connection sqlConnection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+
+        String ip = "-";
+
+        try {
+            sqlConnection = Storage.getStorage().getConnection();
+            preparedStatement = Storage.getStorage().prepare("SELECT machine_id FROM users_machineid_logs WHERE user_id = ? ORDER BY created_at DESC", sqlConnection);
+            preparedStatement.setInt(1, userId);
+            resultSet = preparedStatement.executeQuery();
+
+            if (resultSet.next()) {
+                ip = resultSet.getString("machine_id");
+            }
+
+        } catch (Exception e) {
+            Storage.logError(e);
+        } finally {
+            Storage.closeSilently(resultSet);
+            Storage.closeSilently(preparedStatement);
+            Storage.closeSilently(sqlConnection);
+        }
+
+        return ip;
+    }
+
+
     /**
      * Logs the IP address for a given user
      *
@@ -189,7 +298,7 @@ public class PlayerDao {
      */
     public static boolean loginTicket(Player player, String ssoTicket) {
         boolean success = false;
-        
+
         Connection sqlConnection = null;
         PreparedStatement preparedStatement = null;
         ResultSet resultSet = null;
@@ -216,6 +325,38 @@ public class PlayerDao {
         return success;
     }
 
+    public static boolean login(String username, String password) {
+        boolean success = false;
+
+        Connection sqlConnection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+
+        try {
+            sqlConnection = Storage.getStorage().getConnection();
+            preparedStatement = Storage.getStorage().prepare("SELECT id, password FROM users WHERE username = ? LIMIT 1", sqlConnection);
+            preparedStatement.setString(1, username);
+            resultSet = preparedStatement.executeQuery();
+
+            if (resultSet.next()) {
+                byte[] hashedPassword = (resultSet.getString("password") + '\0').getBytes(StandardCharsets.UTF_8);
+                byte[] pass = password.getBytes(StandardCharsets.UTF_8);
+
+                PwHash.Native pwHash = (PwHash.Native) Kepler.getLibSodium();
+                success = pwHash.cryptoPwHashStrVerify(hashedPassword, pass, pass.length);
+            }
+
+        } catch (Exception e) {
+            Storage.logError(e);
+        } finally {
+            Storage.closeSilently(resultSet);
+            Storage.closeSilently(preparedStatement);
+            Storage.closeSilently(sqlConnection);
+        }
+
+        return success;
+    }
+
     /**
      * Login with SSO ticket.
      *
@@ -224,7 +365,7 @@ public class PlayerDao {
      * @param password password
      * @return true, if successful
      */
-    public static boolean login(PlayerDetails player, String username, String password, boolean useLibSodium, boolean useBcrypt) {
+    public static boolean login(PlayerDetails player, String username, String password) {
         boolean success = false;
 
         Connection sqlConnection = null;
@@ -238,32 +379,14 @@ public class PlayerDao {
             resultSet = preparedStatement.executeQuery();
 
             if (resultSet.next()) {
-                if (useLibSodium) {
-                    byte[] hashedPassword = (resultSet.getString("password") + '\0').getBytes(StandardCharsets.UTF_8);
-                    byte[] pass = password.getBytes(StandardCharsets.UTF_8);
+                byte[] hashedPassword = (resultSet.getString("password") + '\0').getBytes(StandardCharsets.UTF_8);
+                byte[] pass = password.getBytes(StandardCharsets.UTF_8);
 
-                    PwHash.Native pwHash = (PwHash.Native) Kepler.getLibSodium();
-                    success = pwHash.cryptoPwHashStrVerify(hashedPassword, pass, pass.length);
+                PwHash.Native pwHash = (PwHash.Native) Kepler.getLibSodium();
+                success = pwHash.cryptoPwHashStrVerify(hashedPassword, pass, pass.length);
 
-                    if (success) {
-                        fill(player, resultSet);
-                    }
-                } else if (useBcrypt) {
-                    var hashedPassword = resultSet.getString("password");
-
-                    BCrypt.Result result = BCrypt.verifyer().verify(password.toCharArray(), hashedPassword);
-                    success = result.verified;
-
-                    if (success) {
-                        fill(player, resultSet);
-
-                    }
-                } else {
-                    success = password.equals(resultSet.getString("password"));
-
-                    if (success) {
-                        fill(player, resultSet);
-                    }
+                if (success) {
+                    fill(player, resultSet);
                 }
             }
 
@@ -276,6 +399,54 @@ public class PlayerDao {
         }
 
         return success;
+    }
+
+    /**
+     * Increments the online time for the player
+     *
+     * @param userId ID of user
+     * @param seconds Seconds to add
+     */
+    public static void incrementOnlineTime(int userId, long seconds) {
+        Connection sqlConnection = null;
+        PreparedStatement preparedStatement = null;
+
+        try {
+            sqlConnection = Storage.getStorage().getConnection();
+            preparedStatement = Storage.getStorage().prepare("UPDATE users SET online_time_seconds = online_time_seconds + ? WHERE id = ?", sqlConnection);
+            preparedStatement.setLong(1, seconds);
+            preparedStatement.setInt(2, userId);
+            preparedStatement.execute();
+
+        } catch (Exception e) {
+            Storage.logError(e);
+        } finally {
+            Storage.closeSilently(preparedStatement);
+            Storage.closeSilently(sqlConnection);
+        }
+    }
+
+    /**
+     * Increments the times a player has logged in
+     *
+     * @param userId ID of user
+     */
+    public static void incrementLoginCounter(int userId) {
+        Connection sqlConnection = null;
+        PreparedStatement preparedStatement = null;
+
+        try {
+            sqlConnection = Storage.getStorage().getConnection();
+            preparedStatement = Storage.getStorage().prepare("UPDATE users SET times_logged_in = times_logged_in + 1 WHERE id = ?", sqlConnection);
+            preparedStatement.setInt(1, userId);
+            preparedStatement.execute();
+
+        } catch (Exception e) {
+            Storage.logError(e);
+        } finally {
+            Storage.closeSilently(preparedStatement);
+            Storage.closeSilently(sqlConnection);
+        }
     }
 
     /**
@@ -311,7 +482,7 @@ public class PlayerDao {
      */
     public static int getId(String username) {
         int id = -1;
-        
+
         Connection sqlConnection = null;
         PreparedStatement preparedStatement = null;
         ResultSet resultSet = null;
@@ -321,7 +492,7 @@ public class PlayerDao {
             preparedStatement = Storage.getStorage().prepare("SELECT id FROM users WHERE LOWER(username) = ? LIMIT 1", sqlConnection);
             preparedStatement.setString(1, username.toLowerCase());
             resultSet = preparedStatement.executeQuery();
-            
+
             if (resultSet.next()) {
                 id = resultSet.getInt("id");
             }
@@ -334,9 +505,79 @@ public class PlayerDao {
             Storage.closeSilently(sqlConnection);
         }
 
-        return id;    
+        return id;
     }
-    
+
+    /**
+     * Gets the fuses for the users rank.
+     *
+     * @param rankId the rank id
+     * @return the name
+     */
+    public static List<Fuseright> getFusesForRank (int rankId, boolean hasClub) {
+        List<Fuseright> fuses = new ArrayList<>();
+
+        Connection sqlConnection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+        String habboClubQuery = (hasClub) ? " OR user_group = 'HABBO_CLUB'" : "";
+        try {
+            sqlConnection = Storage.getStorage().getConnection();
+            preparedStatement = Storage.getStorage().prepare("SELECT fuse FROM rank_rights where rank_id = ? UNION SELECT fuse FROM fuses where user_group = 'ANYONE'" + habboClubQuery, sqlConnection);
+            preparedStatement.setInt(1, rankId);
+            resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                fuses.add(new Fuseright(resultSet.getString("fuse").toLowerCase()));
+
+            }
+
+        } catch (Exception e) {
+            Storage.logError(e);
+        } finally {
+            Storage.closeSilently(resultSet);
+            Storage.closeSilently(preparedStatement);
+            Storage.closeSilently(sqlConnection);
+        }
+
+        return fuses;
+    }
+
+    /**
+     * Gets the fuses for a specific user.
+     *
+     * @param userId user id of user
+     * @return the name
+     */
+    public static List<Fuseright> getFusesForPlayer (int userId, boolean hasClub) {
+        List<Fuseright> fuses = new ArrayList<>();
+
+        Connection sqlConnection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+        String habboClubQuery = (hasClub) ? " OR user_group = 'HABBO_CLUB'" : "";
+        try {
+            sqlConnection = Storage.getStorage().getConnection();
+            preparedStatement = Storage.getStorage().prepare("SELECT fuse FROM rank_rights where rank_id = (SELECT rank from users where id = ?) UNION SELECT fuse FROM fuses where user_group = 'ANYONE'" + habboClubQuery, sqlConnection);
+            preparedStatement.setInt(1, userId);
+            resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                fuses.add(new Fuseright(resultSet.getString("fuse")));
+
+            }
+
+        } catch (Exception e) {
+            Storage.logError(e);
+        } finally {
+            Storage.closeSilently(resultSet);
+            Storage.closeSilently(preparedStatement);
+            Storage.closeSilently(sqlConnection);
+        }
+
+        return fuses;
+    }
+
     /**
      * Gets the name.
      *
@@ -345,7 +586,7 @@ public class PlayerDao {
      */
     public static String getName(int id) {
         String name = null;
-        
+
         Connection sqlConnection = null;
         PreparedStatement preparedStatement = null;
         ResultSet resultSet = null;
@@ -355,11 +596,11 @@ public class PlayerDao {
             preparedStatement = Storage.getStorage().prepare("SELECT username FROM users WHERE id = ? LIMIT 1", sqlConnection);
             preparedStatement.setInt(1, id);
             resultSet = preparedStatement.executeQuery();
-            
+
             if (resultSet.next()) {
                 name = resultSet.getString("username");
             }
-            
+
         } catch (Exception e) {
             Storage.logError(e);
         } finally {
@@ -368,7 +609,7 @@ public class PlayerDao {
             Storage.closeSilently(sqlConnection);
         }
 
-        return name;    
+        return name;
     }
 
     /**
@@ -664,6 +905,6 @@ public class PlayerDao {
                 row.getBoolean("allow_friend_requests"), row.getBoolean("sound_enabled"),
                 row.getBoolean("tutorial_finished"), row.getInt("battleball_points"),
                 row.getInt("snowstorm_points"),
-                row.getInt("group_id"), row.getString("email"),row.getString("birthday"), row.getBoolean("receive_email"));
+                row.getInt("group_id"), row.getString("email"),row.getString("birthday"), row.getBoolean("receive_email"), row.getInt("last_streak"), row.getInt("login_streak"));
     }
 }

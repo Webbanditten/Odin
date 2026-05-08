@@ -274,13 +274,17 @@ public class RoomMapping {
         refreshRoomItems();
     }
 
+    public void pickupItem(Player player, Item item) {
+        item.getDefinition().getInteractionType().getTrigger().onItemPickup(player, this.room, item);
+        this.removeItem(item);
+    }
+
     /**
      * Remove an item from the room.
      *
      * @param item the item that is being removed
      */
-    public void removeItem(Player player, Item item) {
-        item.getDefinition().getInteractionType().getTrigger().onItemPickup(player, this.room, item);
+    public void removeItem(Item item) {
         this.room.getItems().remove(item);
 
         if (item.hasBehaviour(ItemBehaviour.WALL_ITEM)) {
@@ -429,11 +433,11 @@ public class RoomMapping {
                 if (highestItem.getItemBelow() != null && highestItem.getItemBelow().hasBehaviour(ItemBehaviour.ROLLER)) {
                     // If the difference between the roller, and the next item up is more than 0.5, then set the item below the floating item
                     if (Math.abs(highestItem.getPosition().getZ() - roller.getPosition().getZ()) >= 0.5) {
-                        item.getPosition().setZ(roller.getPosition().getZ() + roller.getDefinition().getTopHeight());
+                        item.getPosition().setZ(roller.getPosition().getZ() + roller.getDefinition().getPositiveTopHeight());
                     }
                 }
 
-                item.getPosition().setZ(roller.getPosition().getZ() + roller.getDefinition().getTopHeight());
+                item.getPosition().setZ(roller.getPosition().getZ() + roller.getDefinition().getPositiveTopHeight());
 
                 /*if (!highestItem.hasBehaviour(ItemBehaviour.CAN_STACK_ON_TOP)) {
                     item.getPosition().setZ(roller.getPosition().getZ() + roller.getDefinition().getTopHeight());
@@ -489,10 +493,7 @@ public class RoomMapping {
         return this.roomMap[x][y];
     }
 
-    public Position getRandomWalkableBound(Entity entity) {
-        Position position = null;
-
-        boolean isWalkable = false;
+    public Position getRandomWalkableBound(Entity entity, boolean allowDoorBound) {
         int attempts = 0;
         int maxAttempts = 10;
 
@@ -501,7 +502,12 @@ public class RoomMapping {
 
             int randomX = this.room.getModel().getRandomBound(0);
             int randomY = this.room.getModel().getRandomBound(1);
-            position = new Position(randomX, randomY);
+            var position = new Position(randomX, randomY);
+
+            if (!allowDoorBound) {
+                if (position.equals(this.room.getModel().getDoorLocation()))
+                    continue;
+            }
 
             if (RoomTile.isValidTile(this.room, entity, position)) {
                 return position;

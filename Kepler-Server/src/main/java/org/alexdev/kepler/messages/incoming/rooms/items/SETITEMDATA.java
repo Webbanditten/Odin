@@ -1,7 +1,9 @@
 package org.alexdev.kepler.messages.incoming.rooms.items;
 
+import org.alexdev.kepler.game.fuserights.Fuse;
 import org.alexdev.kepler.game.item.Item;
 import org.alexdev.kepler.game.fuserights.Fuseright;
+import org.alexdev.kepler.game.item.base.ItemBehaviour;
 import org.alexdev.kepler.game.player.Player;
 import org.alexdev.kepler.game.room.Room;
 import org.alexdev.kepler.messages.types.MessageEvent;
@@ -39,9 +41,9 @@ public class SETITEMDATA implements MessageEvent {
 
         Item item = room.getItemManager().getById(itemId);
 
-        if (item == null) {
-            return;
-        }
+        if (item == null) return;
+
+        if(!item.hasBehaviour(ItemBehaviour.POST_IT)) return; // Prevent from editing other furnis.
 
         String oldText = "";
 
@@ -50,7 +52,7 @@ public class SETITEMDATA implements MessageEvent {
         }
 
         // If the user doesn't have rights, make sure they can only append to the sticky, not remove the existing information before it
-        if (!room.hasRights(player.getDetails().getId()) && !player.hasFuse(Fuseright.ANY_ROOM_CONTROLLER)) {
+        if (!room.hasRights(player.getDetails().getId()) && !player.hasFuse(Fuse.ANY_ROOM_CONTROLLER)) {
             if (!newMessage.startsWith(oldText)) {
                 return;
             }

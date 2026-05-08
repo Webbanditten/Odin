@@ -4,6 +4,7 @@ import org.alexdev.kepler.game.catalogue.CatalogueManager;
 import org.alexdev.kepler.game.commands.Command;
 import org.alexdev.kepler.game.entity.Entity;
 import org.alexdev.kepler.game.entity.EntityType;
+import org.alexdev.kepler.game.fuserights.Fuse;
 import org.alexdev.kepler.game.fuserights.Fuseright;
 import org.alexdev.kepler.game.item.ItemManager;
 import org.alexdev.kepler.game.player.Player;
@@ -11,14 +12,15 @@ import org.alexdev.kepler.game.player.PlayerManager;
 import org.alexdev.kepler.game.room.models.RoomModelManager;
 import org.alexdev.kepler.game.texts.TextsManager;
 import org.alexdev.kepler.messages.outgoing.catalogue.CATALOGUE_PAGES;
-import org.alexdev.kepler.messages.outgoing.user.ALERT;
+import org.alexdev.kepler.messages.outgoing.catalogue.REFRESH_CATALOGUE;
+import org.alexdev.kepler.messages.outgoing.alert.ALERT;
 import org.alexdev.kepler.util.config.GameConfiguration;
 import org.alexdev.kepler.util.config.writer.GameConfigWriter;
 
 public class ReloadCommand extends Command {
     @Override
     public void addPermissions() {
-        this.permissions.add(Fuseright.ADMINISTRATOR_ACCESS);
+        this.permissions.add(Fuse.DEBUG);
     }
 
     @Override
@@ -53,9 +55,12 @@ public class ReloadCommand extends Command {
             // Resend the catalogue index every 15 minutes to clear page cache
             for (Player p : PlayerManager.getInstance().getPlayers()) {
                 p.send(new CATALOGUE_PAGES(
-                        CatalogueManager.getInstance().getPagesForRank(p.getDetails().getRank(), p.getDetails().hasClubSubscription())
+                        CatalogueManager.getInstance().getPagesForRank(p.getDetails().getFuseRights(), p.getDetails().hasClubSubscription())
                 ));
+                p.send(new REFRESH_CATALOGUE());
             }
+
+
 
             componentName = "Catalogue and item definitions";
         }

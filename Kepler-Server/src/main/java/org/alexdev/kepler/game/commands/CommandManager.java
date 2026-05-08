@@ -6,10 +6,11 @@ import org.alexdev.kepler.game.commands.clientside.FurniCommand;
 import org.alexdev.kepler.game.commands.registered.UfosCommand;
 import org.alexdev.kepler.game.commands.registered.*;
 import org.alexdev.kepler.game.entity.Entity;
+import org.alexdev.kepler.game.fuserights.Fuse;
 import org.alexdev.kepler.game.fuserights.Fuseright;
 import org.alexdev.kepler.game.player.Player;
 import org.alexdev.kepler.game.texts.TextsManager;
-import org.alexdev.kepler.messages.outgoing.user.ALERT;
+import org.alexdev.kepler.messages.outgoing.alert.ALERT;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,11 +51,18 @@ public class CommandManager {
         this.commands.put(new String[] { "talk" }, new TalkCommand());
         this.commands.put(new String[] { "infobus", "bus" }, new InfobusCommand());
 		this.commands.put(new String[] { "givecredits" }, new GiveCreditsCommand());
+        this.commands.put(new String[] { "landscape" }, new LandscapeCommand());
+        this.commands.put(new String[] { "landscapeanim" }, new LandscapeAnimCommand());
+        this.commands.put(new String[] { "langcheck" }, new LangcheckCommand());
 
         // Add client-side commands to list
         this.commands.put(new String[] { "chooser" }, new ChooserCommand());
         this.commands.put(new String[] { "furni" }, new FurniCommand());
         this.commands.put(new String[] { "events" }, new EventsCommand());
+        this.commands.put(new String[] { "refreshpublicrooms" }, new RefreshPublicRoomsCommand());
+        this.commands.put(new String[] { "bots" }, new BotsCommand());
+        this.commands.put(new String[] { "botstatus" }, new BotsStatusCommand());
+        this.commands.put(new String[] { "botsreset" }, new BotsReset());
 
         log.info("Loaded {} commands", commands.size());
     }
@@ -108,7 +116,7 @@ public class CommandManager {
      */
     public boolean hasCommandPermission(Entity entity, Command cmd) {
         if (cmd.getPermissions().size() > 0) {
-            for (Fuseright permission : cmd.getPermissions()) {
+            for (Fuse permission : cmd.getPermissions()) {
                 if (entity.hasFuse(permission)) {
                     return true;
                 }

@@ -1,5 +1,6 @@
 package org.alexdev.kepler.messages.incoming.rooms.items;
 
+import org.alexdev.kepler.game.fuserights.Fuse;
 import org.alexdev.kepler.game.item.Item;
 import org.alexdev.kepler.game.item.base.ItemBehaviour;
 import org.alexdev.kepler.game.fuserights.Fuseright;
@@ -54,7 +55,7 @@ public class SETSTUFFDATA implements MessageEvent {
 
         if (item.hasBehaviour(ItemBehaviour.REQUIRES_RIGHTS_FOR_INTERACTION)
                 && !room.hasRights(player.getDetails().getId())
-                && !player.hasFuse(Fuseright.ANY_ROOM_CONTROLLER)) {
+                && !player.hasFuse(Fuse.ANY_ROOM_CONTROLLER)) {
             return;
         }
 
@@ -83,10 +84,10 @@ public class SETSTUFFDATA implements MessageEvent {
         String newData = null;
 
         if (item.hasBehaviour(ItemBehaviour.GATE)) {
-            if (itemData.equals("O") || itemData.equals("C")) {
+            if (itemData.equals("O") || itemData.equals("C") || itemData.equals("2") || itemData.equals("1") || itemData.equals("0")) {
                 newData = itemData;
 
-                if (itemData.equals("C")) {
+                if (itemData.equals("C") || itemData.equals("1")) {
                     RoomTile tile = item.getTile();
 
                     // Make all entities walk out of gate when it's closed

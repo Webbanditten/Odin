@@ -3,6 +3,7 @@ package org.alexdev.kepler.game.commands.registered;
 import org.alexdev.kepler.game.commands.Command;
 import org.alexdev.kepler.game.entity.Entity;
 import org.alexdev.kepler.game.entity.EntityType;
+import org.alexdev.kepler.game.fuserights.Fuse;
 import org.alexdev.kepler.game.item.Item;
 import org.alexdev.kepler.game.fuserights.Fuseright;
 import org.alexdev.kepler.game.player.Player;
@@ -11,7 +12,7 @@ import org.alexdev.kepler.game.room.Room;
 import org.alexdev.kepler.game.room.tasks.RainbowTask;
 import org.alexdev.kepler.messages.outgoing.rooms.user.CHAT_MESSAGE;
 import org.alexdev.kepler.messages.outgoing.rooms.user.CHAT_MESSAGE.ChatMessageType;
-import org.alexdev.kepler.messages.outgoing.user.ALERT;
+import org.alexdev.kepler.messages.outgoing.alert.ALERT;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.concurrent.TimeUnit;
@@ -19,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 public class RainbowDimmerCommand extends Command {
     @Override
     public void addPermissions() {
-        this.permissions.add(Fuseright.DEFAULT);
+        this.permissions.add(Fuse.DEBUG);
     }
 
     @Override
@@ -36,7 +37,7 @@ public class RainbowDimmerCommand extends Command {
 
         Room room = player.getRoomUser().getRoom();
 
-        if (!player.getRoomUser().getRoom().isOwner(player.getDetails().getId()) && !player.hasFuse(Fuseright.ANY_ROOM_CONTROLLER)) {
+        if (!player.getRoomUser().getRoom().isOwner(player.getDetails().getId())) {
             return;
         }
 

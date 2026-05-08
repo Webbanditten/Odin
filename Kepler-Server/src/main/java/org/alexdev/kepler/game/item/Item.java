@@ -21,6 +21,7 @@ import org.alexdev.kepler.util.StringUtil;
 import org.alexdev.kepler.util.config.GameConfiguration;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -39,6 +40,7 @@ public class Item {
 
     private Item itemBelow;
     private Item itemAbove;
+    private long ownedSince;
 
     private Position position;
     private String wallPosition;
@@ -66,7 +68,7 @@ public class Item {
         this.rollingData = null;
     }
 
-    public void fill(int id, int orderId, int ownerId, int roomId, int definitionId, int X, int Y, double Z, int rotation, String wallPosition, String customData, boolean isHidden) {
+    public void fill(int id, int orderId, int ownerId, int roomId, int definitionId, int X, int Y, double Z, int rotation, String wallPosition, String customData, boolean isHidden, long ownedSince) {
         this.id = id;
         this.orderId = orderId;
         this.ownerId = ownerId;
@@ -79,10 +81,25 @@ public class Item {
         this.rollingData = null;
         this.isHidden = isHidden;
         this.setDefinitionId(this.definitionId);
+        this.ownedSince = ownedSince;
 
         if (this.hasBehaviour(ItemBehaviour.TELEPORTER)) {
             this.teleporterId = TeleporterDao.getTeleporterId(this.id);
         }
+    }
+
+    /**
+     * Set Owned since
+     */
+    public void setOwnedSince(long ownedSince) {
+        this.ownedSince = ownedSince;
+    }
+
+    /**
+     * Get Owned since
+     */
+    public long getOwnedSince() {
+        return this.ownedSince;
     }
 
     /**
@@ -167,7 +184,11 @@ public class Item {
         if(this.hasBehaviour(ItemBehaviour.ELEVATION))
             return this.position.getZ() + this.getElevation();
 
-        return this.position.getZ() + this.getDefinition().getTopHeight();
+        if (this.getDefinition().getTopHeight() < 0) {
+            return this.position.getZ() + ItemDefinition.DEFAULT_TOP_HEIGHT;
+        } else {
+            return this.position.getZ() + this.getDefinition().getTopHeight();
+        }
     }
 
     /**
@@ -238,7 +259,7 @@ public class Item {
 
     public boolean isGateOpen() {
         if (this.hasBehaviour(ItemBehaviour.GATE)) {
-            return this.customData.equals("O");
+            return this.customData.equals("O") || this.customData.equals("2");
         }
 
         return false;
@@ -378,7 +399,7 @@ public class Item {
                 return false;
             }
 
-            if ((tile.getWalkingHeight() + item.getDefinition().getTopHeight()) > GameConfiguration.getInstance().getInteger("stack.height.limit")) {
+            if ((tile.getWalkingHeight() + item.getDefinition().getPositiveTopHeight()) > GameConfiguration.getInstance().getInteger("stack.height.limit")) {
                 return false;
             }
 

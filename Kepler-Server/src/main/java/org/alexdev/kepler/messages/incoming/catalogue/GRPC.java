@@ -6,6 +6,7 @@ import org.alexdev.kepler.dao.mysql.PurseDao;
 import org.alexdev.kepler.game.catalogue.CatalogueItem;
 import org.alexdev.kepler.game.catalogue.CatalogueManager;
 import org.alexdev.kepler.game.catalogue.CataloguePage;
+import org.alexdev.kepler.game.fuserights.Fuseright;
 import org.alexdev.kepler.game.item.Item;
 import org.alexdev.kepler.game.item.ItemManager;
 import org.alexdev.kepler.game.item.base.ItemBehaviour;
@@ -15,7 +16,7 @@ import org.alexdev.kepler.game.player.PlayerManager;
 import org.alexdev.kepler.game.texts.TextsManager;
 import org.alexdev.kepler.messages.outgoing.catalogue.NO_CREDITS;
 import org.alexdev.kepler.messages.outgoing.rooms.items.ITEM_DELIVERED;
-import org.alexdev.kepler.messages.outgoing.user.ALERT;
+import org.alexdev.kepler.messages.outgoing.alert.ALERT;
 import org.alexdev.kepler.messages.outgoing.user.NO_USER_FOUND;
 import org.alexdev.kepler.messages.outgoing.user.currencies.CREDIT_BALANCE;
 import org.alexdev.kepler.messages.types.MessageEvent;
@@ -44,7 +45,8 @@ public class GRPC implements MessageEvent {
 
         Optional<CataloguePage> pageStream = CatalogueManager.getInstance().getCataloguePages().stream().filter(p -> item.hasPage(p.getId())).findFirst();
 
-        if (!pageStream.isPresent() || pageStream.get().getMinRole().getRankId() > player.getDetails().getRank().getRankId()) {
+        boolean hasFuse = player.getDetails().getFuseRights().stream().anyMatch(r -> r.getFuse().equalsIgnoreCase(pageStream.get().getFuse()));
+        if (!pageStream.isPresent() || !hasFuse) {
             return;
         }
 

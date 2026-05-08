@@ -211,14 +211,17 @@ public class RoomEntityManager {
 
         player.send(new ROOM_URL());
         player.send(new ROOM_READY(this.room.getId(), this.room.getModel().getName()));
+        player.send(new FLATPROPERTY("landscape", this.room.getData().getLandscape()));
 
         if (this.room.getData().getWallpaper() > 0) {
-            player.send(new FLATPROPERTY("wallpaper", this.room.getData().getWallpaper()));
+            player.send(new FLATPROPERTY("wallpaper", String.valueOf(this.room.getData().getWallpaper())));
         }
 
         if (this.room.getData().getFloor() > 0) {
-            player.send(new FLATPROPERTY("floor", this.room.getData().getFloor()));
+            player.send(new FLATPROPERTY("floor", String.valueOf(this.room.getData().getFloor())));
         }
+
+
 
 
 
@@ -276,7 +279,6 @@ public class RoomEntityManager {
      */
     public void tryRoomEntry(Player player) {
         boolean isRoomActive = this.room.isActive();
-
         if (!this.room.isActive()) {
             this.room.setActive(true);
         };

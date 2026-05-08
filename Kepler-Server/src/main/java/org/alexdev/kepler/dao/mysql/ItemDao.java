@@ -5,6 +5,7 @@ import org.alexdev.kepler.game.item.Item;
 import org.alexdev.kepler.game.item.public_items.PublicItemData;
 import org.alexdev.kepler.game.item.base.ItemDefinition;
 import org.alexdev.kepler.game.room.RoomData;
+import org.alexdev.kepler.util.DateUtil;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -52,6 +53,43 @@ public class ItemDao {
         return definitions;
     }
 
+    /**
+     * Get the item definition.
+     *
+     * @return the item definition
+     */
+    public static ItemDefinition getItemDefinition(int id) {
+        Connection sqlConnection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+        ItemDefinition definition = null;
+
+        try {
+            sqlConnection = Storage.getStorage().getConnection();
+            preparedStatement = Storage.getStorage().prepare("SELECT * FROM items_definitions where id = ?", sqlConnection);
+            preparedStatement.setInt(1, id);
+            resultSet = preparedStatement.executeQuery();
+
+            if (resultSet.next()) {
+                definition = new ItemDefinition(resultSet.getInt("id"), resultSet.getString("sprite"),
+                        resultSet.getString("name"), resultSet.getString("description"),
+                        resultSet.getString("behaviour"), resultSet.getString("interactor"), resultSet.getDouble("top_height"),
+                        resultSet.getInt("length"), resultSet.getInt("width"), resultSet.getString("colour"), resultSet.getString("drink_ids"),
+                        resultSet.getBoolean("is_recyclable"));
+            }
+
+
+        } catch (Exception e) {
+            Storage.logError(e);
+        } finally {
+            Storage.closeSilently(resultSet);
+            Storage.closeSilently(preparedStatement);
+            Storage.closeSilently(sqlConnection);
+        }
+
+        return definition;
+    }
+
 
     /**
      * Create new item entry with the definition id, user id and custom data. It will
@@ -69,10 +107,11 @@ public class ItemDao {
         try {
 
             sqlConnection = Storage.getStorage().getConnection();
-            preparedStatement = Storage.getStorage().prepare("INSERT INTO items (user_id, definition_id, custom_data) VALUES (?,?,?)", sqlConnection);
+            preparedStatement = Storage.getStorage().prepare("INSERT INTO items (user_id, definition_id, custom_data, owned_since) VALUES (?,?,?,?)", sqlConnection);
             preparedStatement.setInt(1, item.getOwnerId());
             preparedStatement.setInt(2, item.getDefinition().getId());
             preparedStatement.setString(3, item.getCustomData());
+            preparedStatement.setLong(4, item.getOwnedSince());
             preparedStatement.executeUpdate();
 
             row = preparedStatement.getGeneratedKeys();
@@ -127,6 +166,27 @@ public class ItemDao {
         }
 
         return items;
+    }
+
+    public static void deleteAllNotInRoom(int userId) {
+
+        Connection sqlConnection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+
+        try {
+            sqlConnection = Storage.getStorage().getConnection();
+            preparedStatement = Storage.getStorage().prepare("DELETE FROM items WHERE user_id = ? AND room_id = 0", sqlConnection);
+            preparedStatement.setInt(1, userId);
+            preparedStatement.executeUpdate();
+
+
+        } catch (Exception e) {
+            Storage.logError(e);
+        } finally {
+            Storage.closeSilently(preparedStatement);
+            Storage.closeSilently(sqlConnection);
+        }
     }
 
     /**
@@ -324,7 +384,7 @@ public class ItemDao {
 
         try {
             sqlConnection = Storage.getStorage().getConnection();
-            preparedStatement = Storage.getStorage().prepare("UPDATE items SET user_id = ?, room_id = ?, definition_id = ?, x = ?, y = ?, z = ?, rotation = ?, wall_position = ?, custom_data = ?, order_id = ?, is_hidden = ? WHERE id = ?", sqlConnection);
+            preparedStatement = Storage.getStorage().prepare("UPDATE items SET user_id = ?, room_id = ?, definition_id = ?, x = ?, y = ?, z = ?, rotation = ?, wall_position = ?, custom_data = ?, order_id = ?, is_hidden = ?, owned_since = ? WHERE id = ?", sqlConnection);
             sqlConnection.setAutoCommit(false);
 
             for (Item item : items) {
@@ -339,7 +399,8 @@ public class ItemDao {
                 preparedStatement.setString(9, item.getCustomData());
                 preparedStatement.setInt(10, item.getOrderId());
                 preparedStatement.setInt(11, item.isHidden() ? 1 : 0);
-                preparedStatement.setLong(12, item.getId());
+                preparedStatement.setLong(12, item.getOwnedSince());
+                preparedStatement.setLong(13, item.getId());
                 preparedStatement.addBatch();
             }
 
@@ -365,6 +426,6 @@ public class ItemDao {
         item.fill(resultSet.getInt("id"), resultSet.getInt("order_id"), resultSet.getInt("user_id"), resultSet.getInt("room_id"),
                 resultSet.getInt("definition_id"), resultSet.getInt("x"), resultSet.getInt("y"),
                 resultSet.getDouble("z"), resultSet.getInt("rotation"), resultSet.getString("wall_position"),
-                resultSet.getString("custom_data"), resultSet.getBoolean("is_hidden"));
+                resultSet.getString("custom_data"), resultSet.getBoolean("is_hidden"), resultSet.getLong("owned_since"));
     }
 }

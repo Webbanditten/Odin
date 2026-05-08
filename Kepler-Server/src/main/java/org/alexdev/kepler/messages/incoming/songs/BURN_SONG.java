@@ -1,6 +1,7 @@
 package org.alexdev.kepler.messages.incoming.songs;
 
 import org.alexdev.kepler.dao.mysql.*;
+import org.alexdev.kepler.game.fuserights.Fuse;
 import org.alexdev.kepler.game.item.Item;
 import org.alexdev.kepler.game.item.ItemManager;
 import org.alexdev.kepler.game.fuserights.Fuseright;
@@ -10,6 +11,7 @@ import org.alexdev.kepler.game.song.Song;
 import org.alexdev.kepler.messages.outgoing.user.currencies.CREDIT_BALANCE;
 import org.alexdev.kepler.messages.types.MessageEvent;
 import org.alexdev.kepler.server.netty.streams.NettyRequest;
+import org.alexdev.kepler.util.DateUtil;
 import org.alexdev.kepler.util.config.ServerConfiguration;
 
 import java.util.Calendar;
@@ -17,9 +19,9 @@ import java.util.Calendar;
 public class BURN_SONG implements MessageEvent {
     @Override
     public void handle(Player player, NettyRequest reader) throws Exception {
-        if (player.getVersion()  <= 14) {
-            return;
-        }
+        // if (player.getVersion()  <= 14) {
+        //     return;
+        // }
 
         if (player.getRoomUser().getRoom() == null) {
             return;
@@ -31,7 +33,7 @@ public class BURN_SONG implements MessageEvent {
             return;
         }
 
-        if (!room.hasRights(player.getDetails().getId()) && !player.hasFuse(Fuseright.ANY_ROOM_CONTROLLER)) {
+        if (!room.hasRights(player.getDetails().getId()) && !player.hasFuse(Fuse.ANY_ROOM_CONTROLLER)) {
             return;
         }
 
@@ -59,7 +61,7 @@ public class BURN_SONG implements MessageEvent {
                 cal.get(Calendar.YEAR) + (char)10 +
                 song.getLength() + (char)10 +
                 song.getTitle());
-
+        item.setOwnedSince(DateUtil.getCurrentTimeSeconds());
         ItemDao.newItem(item);
 
         player.getInventory().addItem(item);

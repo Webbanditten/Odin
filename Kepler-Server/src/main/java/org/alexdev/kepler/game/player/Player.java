@@ -2,33 +2,46 @@ package org.alexdev.kepler.game.player;
 
 import io.netty.util.AttributeKey;
 import org.alexdev.kepler.Kepler;
+import org.alexdev.kepler.dao.mysql.BadgeDao;
 import org.alexdev.kepler.dao.mysql.PlayerDao;
+import org.alexdev.kepler.dao.mysql.RewardDao;
 import org.alexdev.kepler.dao.mysql.SettingsDao;
 import org.alexdev.kepler.game.GameScheduler;
 import org.alexdev.kepler.game.ban.BanType;
+import org.alexdev.kepler.game.catalogue.CatalogueItem;
+import org.alexdev.kepler.game.catalogue.CatalogueManager;
 import org.alexdev.kepler.game.club.ClubSubscription;
 import org.alexdev.kepler.game.entity.Entity;
 import org.alexdev.kepler.game.entity.EntityType;
+import org.alexdev.kepler.game.fuserights.Fuse;
 import org.alexdev.kepler.game.fuserights.Fuseright;
-import org.alexdev.kepler.game.fuserights.FuserightsManager;
 import org.alexdev.kepler.game.inventory.Inventory;
+import org.alexdev.kepler.game.item.Item;
+import org.alexdev.kepler.game.item.ItemManager;
+import org.alexdev.kepler.game.item.base.ItemDefinition;
 import org.alexdev.kepler.game.messenger.Messenger;
 import org.alexdev.kepler.game.room.entities.RoomPlayer;
+import org.alexdev.kepler.log.Log;
 import org.alexdev.kepler.messages.outgoing.club.CLUB_GIFT;
 import org.alexdev.kepler.messages.outgoing.handshake.AVAILABLE_SETS;
 import org.alexdev.kepler.messages.outgoing.handshake.LOGIN;
 import org.alexdev.kepler.messages.outgoing.handshake.RIGHTS;
 import org.alexdev.kepler.messages.outgoing.moderation.USER_BANNED;
 import org.alexdev.kepler.messages.outgoing.openinghours.INFO_HOTEL_CLOSING;
-import org.alexdev.kepler.messages.outgoing.user.ALERT;
+import org.alexdev.kepler.messages.outgoing.alert.ALERT;
+import org.alexdev.kepler.messages.outgoing.rooms.badges.AVAILABLE_BADGES;
 import org.alexdev.kepler.messages.outgoing.user.HOTEL_LOGOUT;
 import org.alexdev.kepler.messages.outgoing.user.HOTEL_LOGOUT.LogoutReason;
 import org.alexdev.kepler.messages.types.MessageComposer;
 import org.alexdev.kepler.server.netty.NettyPlayerNetwork;
+import org.alexdev.kepler.util.DateUtil;
+import org.alexdev.kepler.util.StringUtil;
 import org.alexdev.kepler.util.config.GameConfiguration;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -50,6 +63,7 @@ public class Player extends Entity {
     private boolean loggedIn;
     private boolean disconnected;
     private boolean pingOK;
+    private long lastPing;
 
     public Player(NettyPlayerNetwork nettyPlayerNetwork) {
         this.network = nettyPlayerNetwork;
@@ -68,6 +82,7 @@ public class Player extends Entity {
         this.log = LoggerFactory.getLogger("Player " + this.details.getName()); // Update logger to show name
         this.loggedIn = true;
         this.pingOK = true;
+        this.lastPing = DateUtil.getCurrentTimeSeconds();
 
         PlayerManager.getInstance().disconnectSession(this.details.getId()); // Kill other sessions with same id
         PlayerManager.getInstance().addPlayer(this); // Add new connection
@@ -79,8 +94,6 @@ public class Player extends Entity {
 
         SettingsDao.updateSetting("players.online", String.valueOf(PlayerManager.getInstance().getPlayers().size()));
 
-        this.messenger = new Messenger(this.details);
-        this.inventory = new Inventory(this);
 
         // Bye bye!
         var banned = this.getDetails().isBanned();
@@ -98,11 +111,16 @@ public class Player extends Entity {
             PlayerDao.logIpAddress(this.getDetails().getId(), ipAddress);
         }
         PlayerDao.setPlayerOnline(this.getDetails());
+
+        this.refreshFuserights();
+
         this.details.loadBadges();
         this.details.resetNextHandout();
 
+        this.messenger = new Messenger(this.details);
+        this.inventory = new Inventory(this);
+
         this.send(new LOGIN());
-        this.refreshFuserights();
 
         if (GameConfiguration.getInstance().getBoolean("welcome.message.enabled")) {
             String alertMessage = GameConfiguration.getInstance().getString("welcome.message.content");
@@ -121,6 +139,72 @@ public class Player extends Entity {
 
         this.messenger.sendStatusUpdate();
         ClubSubscription.refreshBadge(this);
+
+        PlayerDao.incrementLoginCounter(this.details.getId());
+
+        // Login streak incrementer
+        long currentTime = DateUtil.getCurrentTimeSeconds();
+        long timeSinceLastStreak = currentTime - this.details.getLastStreak();
+
+        if (timeSinceLastStreak > 172800) {
+            // Reset the streak if it's been more than 48 hours
+            PlayerDao.resetLoginStreak(this.details.getId());
+        } else if (timeSinceLastStreak > 86400) {
+            // Increment the streak if it's been more than 24 hours but less than 48 hours
+            PlayerDao.incrementLoginStreak(this.details.getId());
+        }
+
+        // Rewards
+        var rewards = RewardDao.getAvailableRewards(this.getDetails().getId());
+        rewards.forEach(reward -> {
+            List<ItemDefinition> itemDefinitions = new ArrayList<>();
+            if(reward.getBadge() != null && !reward.getBadge().isEmpty()) {
+                List<String> badges = this.getDetails().getBadges();
+                if (!badges.contains(reward.getBadge())) {
+
+                    badges.add(reward.getBadge());
+                    this.getDetails().setBadges(badges);
+
+                    BadgeDao.saveCurrentBadge(this.getDetails());
+                    BadgeDao.addBadge(this.getDetails().getId(), reward.getBadge());
+
+                    if(this.getDetails().getCurrentBadge().isEmpty()) {
+                        this.getDetails().setCurrentBadge(reward.getBadge());
+                        this.getDetails().setShowBadge(true);
+                    }
+
+                    this.send(new AVAILABLE_BADGES(this.getDetails()));
+                    this.send(new ALERT(reward.getDescription()));
+                }
+            }
+            if(!reward.getItemDefinitions().isEmpty()) {
+                if (reward.getItemDefinitions().contains(",")) {
+                    for (String itemDefinition : reward.getItemDefinitions().split(",")) {
+                        itemDefinitions.add(ItemManager.getInstance().getDefinition(Integer.parseInt(itemDefinition)));
+                    }
+                } else {
+                    itemDefinitions.add(ItemManager.getInstance().getDefinition(Integer.parseInt(reward.getItemDefinitions())));
+                }
+            }
+            if(itemDefinitions.size() == StringUtils.countMatches(reward.getItemDefinitions(), ",") + 1) {
+                try {
+                    Item present = ItemManager.getInstance().createRewardGift(this.details, reward.getItemDefinitions(), StringUtil.filterInput(reward.getDescription(), false));
+                    if(present != null) {
+
+
+                        if (this != null) {
+                            this.getInventory().addItem(present);
+                            this.getInventory().getView("new");
+
+                            RewardDao.redeemReward(reward.getId(), this.details.getId());
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.getErrorLogger().error("Error while creating reward gift", e);
+                }
+            }
+           
+        });
     }
 
     /**
@@ -128,9 +212,9 @@ public class Player extends Entity {
      */
     public void refreshClub() {
         if (this.details.hasClubSubscription()) {
-            if (this.getVersion() <= 17) {
+            //if (this.getVersion() <= 17) {
                 this.send(new AVAILABLE_SETS("[" + GameConfiguration.getInstance().getString("users.figure.parts.club") + "]"));
-            }
+            //}
         }
 
         ClubSubscription.refreshBadge(this);
@@ -141,13 +225,8 @@ public class Player extends Entity {
      * Send fuseright permissions for player.
      */
     public void refreshFuserights() {
-        List<Fuseright> fuserights = FuserightsManager.getInstance().getFuserightsForRank(this.details.getRank());
+        List<Fuseright> fuserights = this.details.refreshFuseRights();
 
-        if (this.getDetails().hasClubSubscription()) {
-            fuserights.addAll(FuserightsManager.getInstance().getClubFuserights());
-        }
-
-        fuserights.removeIf(fuse -> !fuse.getFuseright().startsWith("fuse_"));
         this.send(new RIGHTS(fuserights));
     }
 
@@ -158,8 +237,13 @@ public class Player extends Entity {
      * @return true, if successful
      */
     @Override
-    public boolean hasFuse(Fuseright fuse) {
-        return FuserightsManager.getInstance().hasFuseright(fuse, this.details);
+    public boolean hasFuse(Fuse fuse) {
+        for (Fuseright fuseright : this.getDetails().getFuseRights()) {
+            if(fuseright.getFuse().equalsIgnoreCase(fuse.getFuseName())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -308,6 +392,7 @@ public class Player extends Entity {
 
                 PlayerDao.saveLastOnline(this.getDetails());
                 PlayerDao.setPlayerOffline(this.getDetails());
+                PlayerDao.incrementOnlineTime(this.details.getId(), DateUtil.getCurrentTimeSeconds() - this.lastPing);
                 SettingsDao.updateSetting("players.online", String.valueOf(PlayerManager.getInstance().getPlayers().size()));
 
                 if (this.messenger != null)
@@ -325,7 +410,15 @@ public class Player extends Entity {
         return ignoredList;
     }
 
-    public int getVersion() {
-        return Kepler.getServer().getConnectionRule(this.network.getPort()).getVersion();
+    public void setLastPing(long currentTimeMillis) {
+        this.lastPing = currentTimeMillis;
     }
+
+    public long getLastPing() {
+        return this.lastPing;
+    }
+
+    /*public int getVersion() {
+        return Kepler.getServer().getConnectionRule(this.network.getPort()).getVersion();
+    }*/
 }

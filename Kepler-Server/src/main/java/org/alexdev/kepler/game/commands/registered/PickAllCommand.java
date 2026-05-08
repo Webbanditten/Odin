@@ -4,9 +4,9 @@ import org.alexdev.kepler.dao.mysql.ItemDao;
 import org.alexdev.kepler.game.commands.Command;
 import org.alexdev.kepler.game.entity.Entity;
 import org.alexdev.kepler.game.entity.EntityType;
+import org.alexdev.kepler.game.fuserights.Fuse;
 import org.alexdev.kepler.game.item.Item;
 import org.alexdev.kepler.game.item.base.ItemBehaviour;
-import org.alexdev.kepler.game.fuserights.Fuseright;
 import org.alexdev.kepler.game.player.Player;
 
 import java.util.ArrayList;
@@ -15,7 +15,7 @@ import java.util.List;
 public class PickAllCommand extends Command {
     @Override
     public void addPermissions() {
-        this.permissions.add(Fuseright.DEFAULT);
+        this.permissions.add(Fuse.DEFAULT);
     }
 
     @Override
@@ -30,7 +30,7 @@ public class PickAllCommand extends Command {
             return;
         }
 
-        if (!player.getRoomUser().getRoom().isOwner(player.getDetails().getId()) && !player.hasFuse(Fuseright.ANY_ROOM_CONTROLLER)) {
+        if (!player.getRoomUser().getRoom().isOwner(player.getDetails().getId()) && !player.hasFuse(Fuse.PICK_UP_ANY_FURNI)) {
             return;
         }
 
@@ -51,7 +51,7 @@ public class PickAllCommand extends Command {
         for (Item item : itemsToPickup) {
             item.setOwnerId(player.getDetails().getId());
 
-            player.getRoomUser().getRoom().getMapping().removeItem(player, item);
+            player.getRoomUser().getRoom().getMapping().pickupItem(player, item);
             player.getInventory().addItem(item);
         }
 

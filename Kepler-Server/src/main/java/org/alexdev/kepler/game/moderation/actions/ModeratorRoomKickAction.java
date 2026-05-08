@@ -1,7 +1,9 @@
 package org.alexdev.kepler.game.moderation.actions;
 
 import org.alexdev.kepler.dao.mysql.ModerationDao;
+import org.alexdev.kepler.game.fuserights.Fuse;
 import org.alexdev.kepler.game.fuserights.Fuseright;
+import org.alexdev.kepler.game.moderation.AuditLogType;
 import org.alexdev.kepler.game.moderation.ModerationAction;
 import org.alexdev.kepler.game.moderation.ModerationActionType;
 import org.alexdev.kepler.game.player.Player;
@@ -15,7 +17,7 @@ import java.util.List;
 public class ModeratorRoomKickAction implements ModerationAction {
     @Override
     public void performAction(Player player, Room room, String alertMessage, String notes, NettyRequest reader) {
-        if (!player.hasFuse(Fuseright.ROOM_KICK)) {
+        if (!player.hasFuse(Fuse.ROOM_KICK)) {
             return;
         }
 
@@ -23,7 +25,7 @@ public class ModeratorRoomKickAction implements ModerationAction {
 
         for (Player target : players) {
             // Don't kick other moderators
-            if (target.hasFuse(Fuseright.ROOM_KICK)) {
+            if (target.hasFuse(Fuse.ROOM_KICK)) {
                 continue;
             }
 
@@ -34,6 +36,6 @@ public class ModeratorRoomKickAction implements ModerationAction {
         }
 
 
-        ModerationDao.addLog(ModerationActionType.ROOM_KICK, player.getDetails().getId(), -1, alertMessage, notes);
+        ModerationDao.addLog(AuditLogType.ROOM_KICK, player.getDetails().getId(), 0, alertMessage, notes, player.getRoomUser().getRoom().getId());
     }
 }

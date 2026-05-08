@@ -1,18 +1,18 @@
-# Kepler
+# Odin
 
-A small TCP server written in Java powered by Netty, an asynchronous networking library. Kepler is a Habbo Hotel emulator that is designed to fully emulate the v14 version from 2007 era, and upwards. The server is written in Java (JDK 11) and it's using various libraries, which means it's multiplatform, as in supports a wide range of operating systems. Windows, Linux distros, etc.
+Odin is fork of (https://github.com/quackster/kepler) a Habbo Hotel emulator that is designed to fully emulate a <strike>v14</strike> custom version from the 2006 era. The server is written in Java and using various libraries, such as Netty, an asynchronous networking library, Log4j and the Apache commons libraries.
 
-The server has many features added, and a lot of configuration settings. Most of the configuration settings will be explained below. This server supports version v9 through to v26, and different clients can connect at once, by the server configuration generated. Its support of v9 and v26 are completely experiental, but the full support is of v14, v15 and v21.
+The server is as mentioned designed to run a custom version of Habbo Hotel client. At the time of writing it supports:
+
+- Messenger > v14 (Go to same room, multiple friend requests). It does not support lower versions of the Messenger.
+- Windows and Landscapes
+- Valentines Love "roulette" Sofa
 
 # Screenshots
 
 (Hotel view)
 
 ![https://i.imgur.com/8eFvtdA.png](https://i.imgur.com/8eFvtdA.png)
-
-(Automatic rare cycler)
-
-![https://i.imgur.com/8RTFFqD.png](https://i.imgur.com/8RTFFqD.png)
 
 (Camera)
 
@@ -38,34 +38,39 @@ The server has many features added, and a lot of configuration settings. Most of
 
 - Download web browser with Flash/Shockwave built-in [here](http://forum.ragezone.com/f353/portable-browser-flash-shockwave-basilisk-1192727/)
 - Download and install the latest version of MariaDB
-- Download and install Java JDK 12+
-- Download and install PHP 7+
+- Download and install Java JDK 11+
+- <strike>Habbo Hotel v14 DCR pack [here](https://web.archive.org/web/20220724030154/https://raw.githubusercontent.com/Quackster/Kepler/master/tools/Quackster_v14.zip)</strike> TBA
 
-### Prepare the emulator
+To be honest, this server doesn't require much. I'd argue that the MariaDB server is more resource demanding than the emulator itself.
 
-- Download the latest release of this repo
-- Extract the archive into a folder named **Kepler**
-- Download a v14 DCR pack that you can find in [this topic](http://forum.ragezone.com/f353/kepler-java-v14-server-snowstorm-1155773/)
-- Extract the archive in the same **Kepler** folder
+- JDK >= 17
+- MariaDB server
 
-### Prepare the database
+# Installation
 
-- Create a database named `kepler`
-- Create a user named `kepler` using the password `verysecret`
-- Import the `keplerdb.sql` file into the newly created database
+Install MariaDB server, connect to the database server and import Kepler.sql (located in /tools/Kepler.sql).
 
-### Running the emulator
+Download the latest development build from the [releases page](https://github.com/Quackster/Kepler/releases) and rename the files to remove the short build hash version, for convenience.
 
-- Edit the file `run.bat` from the **Kepler** folder and update the `java.exe` path to the one in your 
-- Execute the file `run.bat` (it will start the server and create a `server.ini` file that you can modify later on, if needed)
+Install any JDK version that is equal or above >= 17 to run the jar files.
 
-### Running the server
+Open run.sh (Linux) or run.bat (Windows) to start Kepler.
 
-- Create a PHP webserver in the **Kepler** folder by using the following command: `php -S localhost:80`
+I highly recommend [this browser](https://forum.oldskooler.org/threads/portable-browser-with-flash-shockwave-basilisk.70/) to be able to play Adobe Shockwave movies in the present day.
 
-### Play in the emulator
+❗ Once registered as an admin, make yourself admin by setting your `rank` to 7 in the `users` table.
 
-- Run the downloaded web-browser and navigate to http://localhost/v14
+As for the client, you can find version 14 DCRs [here](https://web.archive.org/web/20220724030154/https://raw.githubusercontent.com/Quackster/Kepler/master/tools/Quackster_v14.zip).
+
+Setup the loader files on a web server, and once Kepler is started, ensure the loader is connecting to the correct IP and ports for both the standard connection and MUS connection. The MUS connection is used for the camera.
+
+## License
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+### Custom Hotel Views
+
+For archival purposes, there's a zip folder containing a bunch of iconic custom hotel views in /tools/
 
 ## Cloning this repository
 
@@ -81,25 +86,23 @@ $ git submodule update --init --recursive
 ```
 
 ## Development
-IntelliJ config: 
-![intellijconfig.PNG](intellijconfig.PNG)
 
+IntelliJ config:
+![intellijconfig.PNG](intellijconfig.PNG)
 
 Use gradle wrapper config and Java 12.0.
 
-
-
-
 # Thanks to
 
-* Hoshiko
-* ThuGie
-* Ascii
-* Lightbulb
-* Raptosaur
-* Romuald
-* Glaceon
-* Nillus
-* Holo Team
-* Meth0d
-* office.boy
+- Hoshiko
+- ThuGie
+- Ascii
+- Lightbulb
+- Raptosaur
+- Romuald
+- Glaceon
+- Nillus
+- Holo Team
+- Meth0d
+- office.boy
+- Leon Hartley

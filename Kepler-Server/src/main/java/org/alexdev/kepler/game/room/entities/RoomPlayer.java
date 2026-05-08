@@ -52,10 +52,9 @@ public class RoomPlayer extends RoomEntity {
     public void handleSpamTicks() {
         if (this.chatSpamTicks >= 0) {
             this.chatSpamTicks--;
-
-            if (this.chatSpamTicks == -1) {
-                this.chatSpamCount = 0;
-            }
+        }
+        if (this.chatSpamTicks == -1) {
+            this.chatSpamCount = 0;
         }
     }
 
@@ -175,7 +174,7 @@ public class RoomPlayer extends RoomEntity {
         this.player.getDetails().setMotto(newDetails.getMotto());
 
         // Send refresh to user
-        this.player.send(new USER_OBJECT(this.player.getVersion(), this.player.getDetails()));
+        this.player.send(new USER_OBJECT(this.player.getDetails()));
 
         // Send refresh to room if inside room
         if (this.getRoom() != null) {

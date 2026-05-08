@@ -6,11 +6,14 @@ import io.netty.util.ResourceLeakDetector;
 import org.alexdev.kepler.dao.Storage;
 import org.alexdev.kepler.dao.mysql.SettingsDao;
 import org.alexdev.kepler.game.GameScheduler;
+import org.alexdev.kepler.game.ads.AdManager;
 import org.alexdev.kepler.game.bot.BotManager;
 import org.alexdev.kepler.game.catalogue.CatalogueManager;
+import org.alexdev.kepler.game.commandqueue.CommandQueue;
+import org.alexdev.kepler.game.commandqueue.CommandQueueManager;
+import org.alexdev.kepler.game.commandqueue.CommandType;
 import org.alexdev.kepler.game.commands.CommandManager;
 import org.alexdev.kepler.game.events.EventsManager;
-import org.alexdev.kepler.game.fuserights.FuserightsManager;
 import org.alexdev.kepler.game.games.GameManager;
 import org.alexdev.kepler.game.games.snowstorm.SnowStormMapsManager;
 import org.alexdev.kepler.game.infobus.InfobusManager;
@@ -34,9 +37,14 @@ import org.alexdev.kepler.util.config.writer.DefaultConfigWriter;
 import org.alexdev.kepler.util.config.writer.GameConfigWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.DeliverCallback;
 
-import java.io.IOException;
-import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Kepler {
 
@@ -48,9 +56,6 @@ public class Kepler {
     private static String musServerIP;
     private static int musServerPort;
 
-    private static String rconIP;
-    private static int rconPort;
-
     private static boolean isShutdown;
 
     private static NettyServer server;
@@ -58,6 +63,8 @@ public class Kepler {
     private static Logger log;
 
     private static LazySodiumJava LIB_SODIUM;
+
+    public static final String SERVER_VERSION = "1.0.4";
 
     /**
      * Main call of Java application
@@ -75,24 +82,24 @@ public class Kepler {
             log = LoggerFactory.getLogger(Kepler.class);
             ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.ADVANCED);
 
-            System.out.println("  _  __          _           \n" +
-                    " | |/ /___ _ __ | | ___ _ __ \n" +
-                    " | ' // _ \\ '_ \\| |/ _ \\ '__|\n" +
-                    " | . \\  __/ |_) | |  __/ |   \n" +
-                    " |_|\\_\\___| .__/|_|\\___|_|   \n" +
-                    "          |_|                ");
+            System.out.println("   ___   ______   _____  ____  _____  \n" +
+                    " .'   `.|_   _ `.|_   _||_   \\|_   _| \n" +
+                    "/  .-.  \\ | | `. \\ | |    |   \\ | |   \n" +
+                    "| |   | | | |  | | | |    | |\\ \\| |   \n" +
+                    "\\  `-'  /_| |_.' /_| |_  _| |_\\   |_  \n" +
+                    " `.___.'|______.'|_____||_____|\\____| \n" +
+                    "                                      ");
 
-            log.info("Kepler - Habbo Hotel Emulation (max version supported: v26)");
-            String currentDirectory = System.getProperty("user.dir");
-            log.info("The current working directory is " + currentDirectory);
+            log.info("Odin - Habbo Hotel Emulation (revision " + SERVER_VERSION + ")");
+
             if (!Storage.connect()) {
                 return;
             }
 
             log.info("Setting up game");
-            //log.info(REGISTER.createPassword("lol"));
 
             GameConfiguration.getInstance(new GameConfigWriter());
+            AdManager.getInstance();
             WalkwaysManager.getInstance();
             ItemManager.getInstance();
             CatalogueManager.getInstance();
@@ -101,7 +108,6 @@ public class Kepler {
             PlayerManager.getInstance();
             BotManager.getInstance();
             EventsManager.getInstance();
-            FuserightsManager.getInstance();
             NavigatorManager.getInstance();
             ChatManager.getInstance();
             SnowStormMapsManager.getInstance();
@@ -116,15 +122,13 @@ public class Kepler {
             // Update players online back to 0
             SettingsDao.updateSetting("players.online", "0");
 
-            if (ServerConfiguration.getStringOrDefault("password.hashing.library", "argon2").equalsIgnoreCase("argon2")) {
-                log.info("Using Argon2 password hashing algorithim");
-                LIB_SODIUM  = new LazySodiumJava(new SodiumJava());
-            } else {
-                log.info("Using BCrypt password hashing algorithim");
-            }
+            log.info("Using Argon2 password hashing algorithm");
+            LIB_SODIUM  = new LazySodiumJava(new SodiumJava());
 
             setupMus();
             setupServer();
+            setupRabbitMQ();
+            setupSentry();
 
             Runtime.getRuntime().addShutdownHook(new Thread(Kepler::dispose));
         } catch (Exception e) {
@@ -132,8 +136,79 @@ public class Kepler {
         }
     }
 
+    private static void setupSentry() {
+        String sentryDSN = ServerConfiguration.getString("sentry.dsn");
+
+        if (sentryDSN.length() == 0) {
+            log.error("Sentry DSN not provided");
+            return;
+        }
+
+        log.info("Setting up Sentry");
+
+        try {
+            io.sentry.Sentry.init(options -> {
+                options.setDsn(sentryDSN);
+                options.setRelease(SERVER_VERSION);
+                if (ServerConfiguration.getBoolean("sentry.debug")) {
+                    options.setDebug(true);
+                }
+                if (ServerConfiguration.getString("sentry.environment") != null) {
+                    options.setEnvironment(ServerConfiguration.getString("sentry.environment"));
+                }
+            });
+        } catch (Exception e) {
+            log.error("Failed to setup Sentry", e);
+        }
+    }
+
+    private static void setupRabbitMQ() {
+        try {
+            String exchangeName = "commands";
+            String rabbitMQServer = ServerConfiguration.getString("rabbitmq.hostname");
+            int rabbitMQPort = ServerConfiguration.getInteger("rabbitmq.port");
+            String rabbitMQUsername = ServerConfiguration.getString("rabbitmq.username");
+            String rabbitMQPassword = ServerConfiguration.getString("rabbitmq.password");
+
+            if(rabbitMQServer.length() == 0 || rabbitMQPort == 0 || rabbitMQUsername.length() == 0 || rabbitMQPassword.length() == 0) {
+                log.error("RabbitMQ hostname, port, username or password not provided");
+                return;
+            }
+            ConnectionFactory factory = new ConnectionFactory();
+            factory.setHost(rabbitMQServer);
+            factory.setPort(rabbitMQPort);
+            factory.setUsername(rabbitMQUsername);
+            factory.setPassword(rabbitMQPassword);
+
+            Map<String, Object> clientProperties = new HashMap<>();
+            clientProperties.put("connection_name", "KeplerServerMain");
+            factory.setClientProperties(clientProperties);
+
+            Connection connection = factory.newConnection();
+            Channel channel = connection.createChannel();
+            channel.exchangeDeclare(exchangeName, "direct", true);
+            String queueName = channel.queueDeclare("command_queue", false, false, false, null).getQueue();
+            log.info("[RabbitMQ] Waiting for messages");
+
+            for (CommandType commandType: CommandType.values()) {
+                channel.queueBind(queueName, "commands", commandType.getCommandName());
+            }
+
+            DeliverCallback deliverCallback = (consumerTag, delivery) -> {
+                String message = new String(delivery.getBody(), StandardCharsets.UTF_8);
+                log.info("[RabbitMQ] Received '" + message + "'");
+                CommandQueueManager.getInstance().handleCommand(new CommandQueue (delivery.getEnvelope().getRoutingKey(), message));
+            };
+
+            channel.basicConsume(queueName, true, deliverCallback, consumerTag -> { });
+        } catch(Exception e) {
+            log.error("Failed to setup RabbitMQ", e);
+        }
+
+    }
+
     private static void setupServer() {
-        String serverIP = ServerConfiguration.getString("bind");
+        String serverIP = ServerConfiguration.getString("server.bind");
 
         if (serverIP.length() == 0) {
             log.error("Game server bind address is not provided");
@@ -153,7 +228,7 @@ public class Kepler {
     }
 
     private static void setupMus() {
-        musServerIP = ServerConfiguration.getString("bind");
+        musServerIP = ServerConfiguration.getString("mus.bind");
 
         if (musServerIP.length() == 0) {
             log.error("Multi User Server (MUS) bind address is not provided");
@@ -180,7 +255,7 @@ public class Kepler {
 
             // TODO: all the managers
             ChatManager.getInstance().performChatSaving();
-            
+
             GameScheduler.getInstance().performItemSaving();
             GameScheduler.getInstance().performItemDeletion();
 
@@ -194,7 +269,7 @@ public class Kepler {
 
     /**
      * Returns the interface to the server handler
-     * 
+     *
      * @return {@link NettyServer} interface
      */
     public static NettyServer getServer() {
@@ -217,21 +292,6 @@ public class Kepler {
         return serverPort;
     }
 
-    /**
-     * Gets the rcon IPv4 IP address it is currently (or attempting to) listen on
-     * @return IP as string
-     */
-    public static String getRconIP() {
-        return rconIP;
-    }
-
-    /**
-     * Gets the rcon port it is currently (or attempting to) listen on
-     * @return string of IP
-     */
-    public static int getRconPort() {
-        return rconPort;
-    }
 
     /**
      * Gets the startup time.

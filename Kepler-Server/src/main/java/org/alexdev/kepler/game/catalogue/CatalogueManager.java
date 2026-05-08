@@ -1,6 +1,7 @@
 package org.alexdev.kepler.game.catalogue;
 
 import org.alexdev.kepler.dao.mysql.*;
+import org.alexdev.kepler.game.fuserights.Fuseright;
 import org.alexdev.kepler.game.item.Item;
 import org.alexdev.kepler.game.item.ItemManager;
 import org.alexdev.kepler.game.item.base.ItemBehaviour;
@@ -8,7 +9,6 @@ import org.alexdev.kepler.game.item.base.ItemDefinition;
 import org.alexdev.kepler.game.item.interactors.InteractionType;
 import org.alexdev.kepler.game.pets.PetManager;
 import org.alexdev.kepler.game.player.Player;
-import org.alexdev.kepler.game.player.PlayerRank;
 import org.alexdev.kepler.messages.outgoing.user.currencies.FILM;
 import org.alexdev.kepler.util.DateUtil;
 import org.alexdev.kepler.util.StringUtil;
@@ -101,7 +101,7 @@ public class CatalogueManager {
         }
 
         item.setCustomData(customData);
-
+        item.setOwnedSince(DateUtil.getCurrentTimeSeconds());
         ItemDao.newItem(item);
         player.getInventory().addItem(item);
 
@@ -116,7 +116,7 @@ public class CatalogueManager {
             linkedTeleporterItem.setOwnerId(player.getDetails().getId());
             linkedTeleporterItem.setDefinitionId(def.getId());
             linkedTeleporterItem.setCustomData(customData);
-
+            linkedTeleporterItem.setOwnedSince(DateUtil.getCurrentTimeSeconds());
             ItemDao.newItem(linkedTeleporterItem);
             player.getInventory().addItem(linkedTeleporterItem);
 
@@ -233,7 +233,7 @@ public class CatalogueManager {
      *
      * @return the list of catalogue pages
      */
-    public List<CataloguePage> getPagesForRank(PlayerRank minimumRank, boolean hasClub) {
+    public List<CataloguePage> getPagesForRank(List<Fuseright> fuses, boolean hasClub) {
         List<CataloguePage> cataloguePagesForRank = new ArrayList<>();
 
         for (CataloguePage page : this.cataloguePageList) {
@@ -245,7 +245,8 @@ public class CatalogueManager {
                 continue;
             }
 
-            if (minimumRank.getRankId() >= page.getMinRole().getRankId()) {
+            boolean hasFuse = fuses.stream().anyMatch(r -> r.getFuse().equalsIgnoreCase(page.getFuse()));
+            if (hasFuse) {
                 cataloguePagesForRank.add(page);
             }
         }

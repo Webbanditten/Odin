@@ -1,13 +1,14 @@
 package org.alexdev.kepler.messages.incoming.rooms.items;
 
 import org.alexdev.kepler.dao.mysql.ItemDao;
+import org.alexdev.kepler.game.fuserights.Fuse;
 import org.alexdev.kepler.game.item.Item;
 import org.alexdev.kepler.game.item.base.ItemBehaviour;
 import org.alexdev.kepler.game.fuserights.Fuseright;
 import org.alexdev.kepler.game.player.Player;
 import org.alexdev.kepler.game.room.Room;
 import org.alexdev.kepler.game.texts.TextsManager;
-import org.alexdev.kepler.messages.outgoing.user.ALERT;
+import org.alexdev.kepler.messages.outgoing.alert.ALERT;
 import org.alexdev.kepler.messages.types.MessageEvent;
 import org.alexdev.kepler.server.netty.streams.NettyRequest;
 import org.apache.commons.lang3.StringUtils;
@@ -23,7 +24,7 @@ public class PLACESTUFF implements MessageEvent {
             return;
         }
 
-        if (!room.hasRights(player.getDetails().getId()) && !player.hasFuse(Fuseright.ANY_ROOM_CONTROLLER)) {
+        if (!room.hasRights(player.getDetails().getId()) && !player.hasFuse(Fuse.ANY_ROOM_CONTROLLER)) {
             return;
         }
 
@@ -85,15 +86,7 @@ public class PLACESTUFF implements MessageEvent {
         } else {
             int x = Integer.parseInt(data[1]);
             int y = Integer.parseInt(data[2]);
-            int rotation = 0;
-
-            // skip 3 and 4 as they're dimensions, we don't need 'em since it's server-side variables, never trust the client!
-            if (player.getVersion() >= 23) {
-                rotation = Integer.parseInt(data[3]);
-            } else  if (player.getVersion() <= 21) {
-                rotation = Integer.parseInt(data[5]);
-            }
-
+            int rotation = rotation = Integer.parseInt(data[5]);
 
             if (item.hasBehaviour(ItemBehaviour.REDIRECT_ROTATION_0)) {
                 rotation = 0;
@@ -108,6 +101,7 @@ public class PLACESTUFF implements MessageEvent {
             }
 
             if (!item.isValidMove(item, room, player, x, y, rotation)) {
+                player.getInventory().getView("update");
                 return;
             }
 
@@ -119,15 +113,16 @@ public class PLACESTUFF implements MessageEvent {
         }
 
         if (room.getItemManager().getSoundMachine() != null && (item.hasBehaviour(ItemBehaviour.SOUND_MACHINE) || item.hasBehaviour(ItemBehaviour.JUKEBOX))) {
+            player.getInventory().getView("update");
             player.send(new ALERT(TextsManager.getInstance().getValue("room_sound_furni_limit")));
             return;
         }
 
         if (room.getItemManager().getMoodlight() != null && (item.hasBehaviour(ItemBehaviour.ROOMDIMMER))) {
+            player.getInventory().getView("update");
             player.send(new ALERT(TextsManager.getInstance().getValue("roomdimmer_furni_limit")));
             return;
         }
-
         room.getMapping().addItem(player, item);
         player.getInventory().getItems().remove(item);
     }

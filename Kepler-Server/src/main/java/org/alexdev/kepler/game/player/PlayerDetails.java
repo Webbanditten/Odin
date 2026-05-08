@@ -6,6 +6,7 @@ import org.alexdev.kepler.dao.mysql.GroupDao;
 import org.alexdev.kepler.dao.mysql.PlayerDao;
 import org.alexdev.kepler.game.ban.BanType;
 import org.alexdev.kepler.game.ban.BannedPlayer;
+import org.alexdev.kepler.game.fuserights.Fuseright;
 import org.alexdev.kepler.game.games.enums.GameType;
 import org.alexdev.kepler.util.DateUtil;
 import org.alexdev.kepler.util.StringUtil;
@@ -35,7 +36,7 @@ public class PlayerDetails {
     // Currencies
     private int tickets;
     private int film;
-    private PlayerRank rank;
+    private List<Fuseright> fuserights;
 
     // Club
     private long firstClubSubscription;
@@ -60,6 +61,10 @@ public class PlayerDetails {
     // Game points
     private int snowstormPoints;
     private int battleballPoints;
+
+    // Streaks
+    private int lastStreak;
+    private int loginStreak;
 
     public PlayerDetails() {
     }
@@ -89,21 +94,21 @@ public class PlayerDetails {
      * @param group group
      */
     public void fill(int id, String username, String figure, String poolFigure, int credits, String motto, String consoleMotto, String sex, int tickets, int film, int rank, long lastOnline, long firstClubSubscription, long clubExpiration, long clubGiftDue, String currentBadge, boolean showBadge, boolean allowStalking, boolean allowFriendRequests, boolean soundEnabled,
-                     boolean tutorialFinished, int battleballPoints, int snowstormPoints, int group, String email, String birthday, boolean receiveNews) {
+                     boolean tutorialFinished, int battleballPoints, int snowstormPoints, int group, String email, String birthday, boolean receiveNews, int lastStreak, int loginStreak) {
         this.id = id;
         this.username = StringUtil.filterInput(username, true);
         this.figure = StringUtil.filterInput(figure, true); // Format: hd-180-1.ch-255-70.lg-285-77.sh-295-74.fa-1205-91.hr-125-31.ha-1016-
         this.poolFigure = StringUtil.filterInput(poolFigure, true); // Format: ch=s02/238,238,238
         this.motto = StringUtil.filterInput(motto, true);
         this.consoleMotto = StringUtil.filterInput(consoleMotto, true);
-        this.sex = sex.toLowerCase().equals("f") ? 'F' : 'M';
+        this.sex = sex.equalsIgnoreCase("f") ? 'F' : 'M';
         this.credits = credits;
         this.tickets = tickets;
         this.birthday = birthday;
         this.email = email;
         this.receiveNews = receiveNews;
         this.film = film;
-        this.rank = PlayerRank.getRankForId(rank);
+        this.fuserights = null;
         this.lastOnline = lastOnline;
         this.firstClubSubscription = firstClubSubscription;
         this.clubExpiration = clubExpiration;
@@ -116,6 +121,8 @@ public class PlayerDetails {
         this.tutorialFinished = tutorialFinished;
         this.battleballPoints = battleballPoints;
         this.snowstormPoints = snowstormPoints;
+        this.lastStreak = lastStreak;
+        this.loginStreak = loginStreak;
         this.group = group;
         if(group > 0) {
             this.groupStatus = GroupDao.getMemberStatus(group, id);
@@ -137,6 +144,8 @@ public class PlayerDetails {
             // TODO: log warning
             this.film = 0;
         }
+
+        refreshFuseRights();
     }
 
     public void fill(int id, String username, String figure, String motto, String sex) {
@@ -184,14 +193,27 @@ public class PlayerDetails {
         return null;
     }
 
+    public int getLoginStreak() {
+        return loginStreak;
+    }
+
+    public int getLastStreak() {
+        return lastStreak;
+    }
+
+    public void setLoginStreak(int loginStreak) {
+        this.loginStreak = loginStreak;
+    }
+
+    public void setLastStreak(int lastStreak) {
+        this.lastStreak = lastStreak;
+    }
+
     public int getId() {
         return id;
     }
     public String getEmail() {
         return email;
-    }
-    public String getBirthday() {
-        return birthday;
     }
 
     public int getGroup() {
@@ -281,12 +303,14 @@ public class PlayerDetails {
         this.film = film;
     }
 
-    public PlayerRank getRank() {
-        return this.rank;
+    public List<Fuseright> getFuseRights() {
+        return this.fuserights;
     }
 
-    public void setRank(PlayerRank rank) {
-        this.rank = rank;
+    public List<Fuseright> refreshFuseRights() {
+        List<Fuseright> newFuses = PlayerDao.getFusesForPlayer(this.id, this.hasClubSubscription());
+        this.fuserights = newFuses;
+        return newFuses;
     }
 
     public long getLastOnline() {
@@ -417,5 +441,13 @@ public class PlayerDetails {
 
     public void setReceiveNews(boolean receiveNews) {
         this.receiveNews = receiveNews;
+    }
+
+    public String getBirthday() {
+        return birthday;
+    }
+
+    public void setBirthday(String birthday) {
+        this.birthday = birthday;
     }
 }

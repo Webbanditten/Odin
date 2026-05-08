@@ -1,5 +1,7 @@
 package org.alexdev.kepler.game.moderation.cfh;
 
+import org.alexdev.kepler.dao.mysql.CallForHelpDao;
+import org.alexdev.kepler.game.fuserights.Fuse;
 import org.alexdev.kepler.game.fuserights.Fuseright;
 import org.alexdev.kepler.game.player.Player;
 import org.alexdev.kepler.game.player.PlayerManager;
@@ -41,6 +43,9 @@ public class CallForHelpManager {
 
         CallForHelp cfh = new CallForHelp(callId, callerId, room, message);
         this.callsForHelp.put(callId, cfh);
+
+        // Persist to database
+        CallForHelpDao.logCall(cfh, caller.getDetails().getName());
 
         sendToModerators(new CALL_FOR_HELP(cfh));
         caller.send(new CRY_RECEIVED());
@@ -89,7 +94,7 @@ public class CallForHelpManager {
      */
     private void sendToModerators(MessageComposer message) {
         for (Player p : PlayerManager.getInstance().getPlayers()) {
-            if (p.hasFuse(Fuseright.RECEIVE_CALLS_FOR_HELP)) {
+            if (p.hasFuse(Fuse.RECEIVE_CALLS_FOR_HELP)) {
                 p.send(message);
             }
         }
@@ -103,6 +108,9 @@ public class CallForHelpManager {
      */
     public void pickUp(CallForHelp cfh, Player moderator) {
         cfh.setPickedUpBy(moderator);
+
+        // Persist pick-up to database
+        CallForHelpDao.logPickUp(cfh);
 
         // Send the updated CallForHelp to all moderators
         sendToModerators(new PICKED_CRY(cfh));
@@ -120,6 +128,10 @@ public class CallForHelpManager {
         }
 
         cfh.updateCategory(newCategory);
+
+        // Persist category change to database
+        CallForHelpDao.updateCategory(cfh);
+
         sendToModerators(new CALL_FOR_HELP(cfh));
     }
 
@@ -127,9 +139,15 @@ public class CallForHelpManager {
      * Deletes the cfh to all moderators and marks it for deletion in 30 minutes.
      *
      * @param cfh the cfh to delete
+     * @param reason the reason for closing (replied, cancelled, expired)
+     * @param replyMessage the reply message sent to the caller (null if not applicable)
      */
-    public void deleteCall(CallForHelp cfh) {
+    public void deleteCall(CallForHelp cfh, String reason, String replyMessage) {
         cfh.setDeleted(true);
+
+        // Persist closure to database
+        CallForHelpDao.closeCall(cfh, reason, replyMessage);
+
         sendToModerators(new DELETE_CRY(cfh.getCryId()));
     }
 
@@ -137,10 +155,17 @@ public class CallForHelpManager {
      * Purges expired cfhs, server remembers them for atleast 30 minutes
      */
     public void purgeExpiredCfh() {
-        Predicate<CallForHelp> filter = cfh -> !cfh.isOpen() || DateUtil.getCurrentTimeSeconds() > cfh.getExpireTime();
+        // Only purge CFHs that are already deleted (resolved) or have truly expired (past 30 min timer)
+        // Picked-but-unresolved CFHs remain visible until replied to or expired
+        Predicate<CallForHelp> filter = cfh -> cfh.isDeleted() || DateUtil.getCurrentTimeSeconds() > cfh.getExpireTime();
 
         this.callsForHelp.values().stream().filter(filter).collect(Collectors.toList()).forEach(x -> {
-            sendToModerators(new DELETE_CRY(x.getCryId()));
+            if (!x.isDeleted()) {
+                // Expired without being resolved — persist the expiry and notify moderators
+                CallForHelpDao.closeCall(x, "expired", null);
+                sendToModerators(new DELETE_CRY(x.getCryId()));
+            }
+            // Already-deleted CFHs had DELETE_CRY sent when deleteCall() was called, just clean up memory
         });
 
         this.callsForHelp.values().removeIf(filter);

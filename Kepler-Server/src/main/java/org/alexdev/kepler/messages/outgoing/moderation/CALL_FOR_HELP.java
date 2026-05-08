@@ -19,7 +19,7 @@ public class CALL_FOR_HELP extends MessageComposer {
         response.writeString(this.cfh.getFormattedRequestTime());
         response.writeString(this.cfh.getCaller());
         response.writeString(this.cfh.getMessage());
-        response.writeString(this.cfh.getCaller());
+        response.writeString(String.valueOf(this.cfh.getRoom().getId()));
         response.writeString(this.cfh.getRoom().getData().getName());
 
         if (this.cfh.getRoom() != null) {
@@ -27,11 +27,11 @@ public class CALL_FOR_HELP extends MessageComposer {
                 response.writeInt(0);
                 response.writeString(this.cfh.getRoom().getData().getCcts());
                 response.writeInt(this.cfh.getRoom().getId() + RoomManager.PUBLIC_ROOM_OFFSET);
-                response.writeInt(this.cfh.getRoom().getId());
+                response.writeInt(0);
             } else {
                 response.writeInt(1);
                 response.writeString(this.cfh.getRoom().getData().getName());
-                response.writeInt(this.cfh.getRoom().getId() );
+                response.writeInt(this.cfh.getRoom().getId());
                 response.writeString(this.cfh.getRoom().getData().getOwnerName());
             }
         }
