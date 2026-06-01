@@ -15,7 +15,9 @@ public enum CommandType {
     TEST_PACKET("test_packet"),
     UPDATE_INFOBUS("update_infobus"),
     RESET_BOTS("reset_bots"),
-    BOT_TALK("bot_talk");
+    BOT_TALK("bot_talk"),
+    RELOAD_CATALOGUE("reload_catalogue"),
+    RELOAD_NAVIGATOR("reload_navigator");
 
     private final String commandName;
 

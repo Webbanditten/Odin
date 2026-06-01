@@ -60,6 +60,12 @@ public class CommandQueueManager {
                 case BOT_TALK:
                     command = new BotTalkCommand();
                     break;
+                case RELOAD_CATALOGUE:
+                    command = new ReloadCatalogueCommand();
+                    break;
+                case RELOAD_NAVIGATOR:
+                    command = new ReloadNavigatorCommand();
+                    break;
                 default:
                     break;
             }

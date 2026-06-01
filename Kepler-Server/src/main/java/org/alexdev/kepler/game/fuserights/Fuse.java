@@ -57,7 +57,8 @@ public enum Fuse {
         //EDIT_CATALOGUE("fuse_catalog_editor"), // Not used
         GIVE_CREDITS("fuse_give_credits"),
         BADGES("fuse_badges"),
-        BOTS("fuse_bots");
+        BOTS("fuse_bots"),
+        CAMPAIGNS("fuse_campaigns");
 
         private final String fuseName;
 
