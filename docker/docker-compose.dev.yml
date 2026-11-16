@@ -5,17 +5,24 @@
 # Versions match production. Ports are bound to 127.0.0.1 only. The credentials
 # below are local-only defaults, so never reuse them anywhere else.
 #
+# MariaDB 11.4 upgrades an existing (10.4) data volume in place on first start
+# (MARIADB_AUTO_UPGRADE). RabbitMQ 4 can't start on a 3.11 data dir, so it uses a
+# new volume (`rabbitmq4`); nothing in it needs keeping, both apps re-declare
+# their exchanges and queues. The image has no `mysql*` binaries: use `mariadb`
+# and `mariadb-dump`.
+#
 # Seed the database from a production dump (see the workspace CLAUDE.md):
 #   gunzip -c ../backups/kepler_prod_<date>.sql.gz \
-#     | docker exec -i odin-dev-mariadb mysql -uroot -podin
+#     | docker exec -i odin-dev-mariadb mariadb -uroot -podin
 name: odin-dev
 
 services:
   mariadb:
-    image: mariadb:10.4.18-focal
+    image: mariadb:11.4.13
     container_name: odin-dev-mariadb
     restart: unless-stopped
     environment:
+      MARIADB_AUTO_UPGRADE: "1"
       MYSQL_ROOT_PASSWORD: odin
       MYSQL_DATABASE: kepler
       MYSQL_USER: kepler
@@ -26,13 +33,13 @@ services:
     volumes:
       - mariadb:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-podin"]
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 5s
       timeout: 5s
       retries: 20
 
   rabbitmq:
-    image: rabbitmq:3.11.16-management-alpine
+    image: rabbitmq:4.4.0-management-alpine
     container_name: odin-dev-rabbitmq
     restart: unless-stopped
     environment:
@@ -42,7 +49,7 @@ services:
       - "127.0.0.1:5672:5672"
       - "127.0.0.1:15672:15672"
     volumes:
-      - rabbitmq:/var/lib/rabbitmq
+      - rabbitmq4:/var/lib/rabbitmq
     healthcheck:
       test: rabbitmq-diagnostics -q ping
       interval: 10s
@@ -51,4 +58,4 @@ services:
 
 volumes:
   mariadb:
-  rabbitmq:
+  rabbitmq4:

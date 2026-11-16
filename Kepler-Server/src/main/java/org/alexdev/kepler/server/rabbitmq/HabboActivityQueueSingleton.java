@@ -19,7 +19,6 @@ public class HabboActivityQueueSingleton {
     private Connection connection;
     private Channel channel;
     private static final String exchangeName = "habbo_activity";
-    private static final String queueName = "";
 
     private HabboActivityQueueSingleton() {
         try {
@@ -43,9 +42,10 @@ public class HabboActivityQueueSingleton {
             factory.setClientProperties(clientProperties);
             connection = factory.newConnection();
             channel = connection.createChannel();
+            // Publish only. Consumers (the CMS) bind their own exclusive queues. A queue declared here had no
+            // consumer, so it piled up every message and was left behind on each restart, and RabbitMQ 4 refuses
+            // it anyway (transient non-exclusive).
             channel.exchangeDeclare(exchangeName, BuiltinExchangeType.FANOUT, false);
-            channel.queueDeclare(queueName, false, false, false, null);
-            channel.queueBind(queueName, exchangeName, "");
         } catch (Exception e) {
             log.error("Failed to initialize RabbitMQ connection factory", e);
         }
