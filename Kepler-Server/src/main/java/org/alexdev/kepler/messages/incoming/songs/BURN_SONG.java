@@ -1,5 +1,6 @@
 package org.alexdev.kepler.messages.incoming.songs;
 
+import org.alexdev.kepler.dao.mysql.PurchaseLogDao;
 import org.alexdev.kepler.dao.mysql.*;
 import org.alexdev.kepler.game.fuserights.Fuse;
 import org.alexdev.kepler.game.item.Item;
@@ -71,6 +72,8 @@ public class BURN_SONG implements MessageEvent {
         JukeboxDao.setBurned(songId, true);
 
         PurseDao.logCreditSpend("stuff_store", player.getDetails(), -1);
+        PurchaseLogDao.log(player.getDetails(), PurchaseLogDao.SONG, null, null, item.getDefinition() != null ? item.getDefinition().getId() : null,
+                song.getTitle(), 1, null);
         CurrencyDao.decreaseCredits(player.getDetails(), 1);
         player.send(new CREDIT_BALANCE(player.getDetails()));
     }
