@@ -1,6 +1,7 @@
 package org.alexdev.kepler.server.netty;
 
 import io.netty.channel.Channel;
+import org.alexdev.kepler.server.websocket.WebSocketServer;
 import org.alexdev.kepler.messages.types.MessageComposer;
 
 import java.util.Queue;
@@ -46,6 +47,13 @@ public class NettyPlayerNetwork {
     }
 
     public static String getIpAddress(Channel channel) {
+        // WebSocket connections carry the client's address (behind a trusted proxy: from X-Forwarded-For).
+        String webSocketIp = channel.attr(WebSocketServer.REAL_IP).get();
+
+        if (webSocketIp != null) {
+            return webSocketIp;
+        }
+
         return channel.remoteAddress().toString().replace("/", "").split(":")[0];
     }
 

@@ -29,6 +29,7 @@ import org.alexdev.kepler.game.texts.TextsManager;
 import org.alexdev.kepler.messages.MessageHandler;
 import org.alexdev.kepler.server.mus.MusServer;
 import org.alexdev.kepler.server.netty.NettyServer;
+import org.alexdev.kepler.server.websocket.WebSocketServer;
 import org.alexdev.kepler.util.DateUtil;
 import org.alexdev.kepler.util.config.GameConfiguration;
 import org.alexdev.kepler.util.config.LoggingConfiguration;
@@ -60,6 +61,7 @@ public class Kepler {
 
     private static NettyServer server;
     private static MusServer musServer;
+    private static WebSocketServer webSocketServer;
     private static Logger log;
 
     private static LazySodiumJava LIB_SODIUM;
@@ -127,6 +129,7 @@ public class Kepler {
 
             setupMus();
             setupServer();
+            setupWebSocket();
             setupRabbitMQ();
             setupSentry();
 
@@ -247,6 +250,40 @@ public class Kepler {
         musServer.bind();
     }
 
+    /**
+     * Browser clients (DirPlayer) connect here over WebSocket: {@code /game} and {@code /mus} on one port.
+     * Off unless ws.port is set.
+     */
+    private static void setupWebSocket() {
+        int port = ServerConfiguration.getInteger("ws.port");
+
+        if (port == 0) {
+            return;
+        }
+
+        String bind = ServerConfiguration.getStringOrDefault("ws.bind", "127.0.0.1");
+        WebSocketServer.WebSocketSettings settings = new WebSocketServer.WebSocketSettings(
+                csvSet(ServerConfiguration.getStringOrDefault("ws.trusted.proxies", "127.0.0.1")),
+                csvSet(ServerConfiguration.getStringOrDefault("ws.allowed.origins", "")),
+                Integer.parseInt(ServerConfiguration.getStringOrDefault("ws.max.frame.size", "65536")));
+
+        webSocketServer = new WebSocketServer(bind, port, settings, server, musServer);
+        webSocketServer.createSocket();
+        webSocketServer.bind();
+    }
+
+    private static java.util.Set<String> csvSet(String value) {
+        java.util.Set<String> set = new java.util.HashSet<>();
+
+        for (String item : value.split(",")) {
+            if (!item.isBlank()) {
+                set.add(item.trim());
+            }
+        }
+
+        return set;
+    }
+
     private static void dispose() {
         try {
 
@@ -261,6 +298,10 @@ public class Kepler {
 
             PlayerManager.getInstance().dispose();
 
+            if (webSocketServer != null) {
+                webSocketServer.dispose();
+            }
+
             server.dispose();
         } catch (Exception e) {
             e.printStackTrace();
@@ -274,6 +315,13 @@ public class Kepler {
      */
     public static NettyServer getServer() {
         return server;
+    }
+
+    /**
+     * @return the MUS server
+     */
+    public static MusServer getMusServer() {
+        return musServer;
     }
 
     /**

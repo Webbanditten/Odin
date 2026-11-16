@@ -15,6 +15,16 @@ rcon.port=0
 mus.bind=127.0.0.1
 mus.port=12322
 
+[WebSocket]
+; Browser clients (DirPlayer) connect to ws://<bind>:<port>/game and /mus (any path prefix works, e.g. /ws/game
+; behind a reverse proxy). 0 turns it off. X-Forwarded-For is only believed from ws.trusted.proxies, so bans
+; see the real client address. ws.allowed.origins (comma-separated, e.g. https://habbo-danmark.com) limits
+; which pages may connect; empty allows any.
+ws.bind=127.0.0.1
+ws.port=12323
+ws.trusted.proxies=127.0.0.1
+ws.allowed.origins=
+
 [Database]
 mysql.hostname=127.0.0.1
 mysql.port=3306
