@@ -190,7 +190,9 @@ public class Kepler {
             Connection connection = factory.newConnection();
             Channel channel = connection.createChannel();
             channel.exchangeDeclare(exchangeName, "direct", true);
-            String queueName = channel.queueDeclare("command_queue", false, false, false, null).getQueue();
+            // Durable: RabbitMQ 4 refuses transient non-exclusive queues (deprecated feature
+            // transient_nonexcl_queues). The CMS declares it with the same arguments.
+            String queueName = channel.queueDeclare("command_queue", true, false, false, null).getQueue();
             log.info("[RabbitMQ] Waiting for messages");
 
             for (CommandType commandType: CommandType.values()) {
