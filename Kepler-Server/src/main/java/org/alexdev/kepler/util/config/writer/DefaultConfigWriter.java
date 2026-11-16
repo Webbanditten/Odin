@@ -15,6 +15,11 @@ public class DefaultConfigWriter implements ConfigWriter {
         config.put("mus.bind", "127.0.0.1");
         config.put("mus.port", "12322");
 
+        config.put("ws.bind", "127.0.0.1");
+        config.put("ws.port", "0");
+        config.put("ws.trusted.proxies", "127.0.0.1");
+        config.put("ws.allowed.origins", "");
+
         config.put("rcon.bind", "127.0.0.1");
         config.put("rcon.port", "12309");
 
@@ -45,6 +50,13 @@ public class DefaultConfigWriter implements ConfigWriter {
         writer.println("[Mus]");
         writer.println("mus.bind=" + config.get("mus.bind"));
         writer.println("mus.port=" + config.get("mus.port"));
+        writer.println("");
+        writer.println("[WebSocket]");
+        writer.println("; Browser clients (DirPlayer): ws://<bind>:<port>/game and /mus. 0 = off.");
+        writer.println("ws.bind=" + config.get("ws.bind"));
+        writer.println("ws.port=" + config.get("ws.port"));
+        writer.println("ws.trusted.proxies=" + config.get("ws.trusted.proxies"));
+        writer.println("ws.allowed.origins=" + config.get("ws.allowed.origins"));
         writer.println("");
         writer.println("[Database]");
         writer.println("mysql.hostname=" + config.get("mysql.hostname"));
