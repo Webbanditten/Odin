@@ -45,17 +45,23 @@ public class PetTask extends TickTask {
         if (!this.canMove())
             return;
 
+        // Heading for food or water: wait for the next regular tick. Returning without a delay made
+        // StatusTask run tryEat/tryDrink again every second while the pet walked, and each call talked.
         if (this.pet.getHunger() <= 2) {
             if (this.tryEat()) {
+                this.setTimeUntilNextTick(ThreadLocalRandom.current().nextInt(10, 26));
                 return;
             }
         }
 
         if (this.pet.getThirst() <= 1) {
             if (this.tryDrink()) {
+                this.setTimeUntilNextTick(ThreadLocalRandom.current().nextInt(10, 26));
                 return;
             }
         }
+
+        boolean needy = this.pet.getHunger() <= 2 || this.pet.getThirst() <= 1;
 
         PetAction petAction = possibleActions[ThreadLocalRandom.current().nextInt(0, possibleActions.length - 1)];
 
@@ -81,7 +87,8 @@ public class PetTask extends TickTask {
                 break;
         }
 
-        if (ThreadLocalRandom.current().nextInt(0, 25) == 0) {
+        // A hungry or thirsty pet with nothing to eat or drink complains more often (once per tick at most).
+        if (ThreadLocalRandom.current().nextInt(0, needy ? 4 : 25) == 0) {
             this.talk();
         }
 
@@ -177,7 +184,6 @@ public class PetTask extends TickTask {
     }
 
     private boolean tryEat() {
-        this.talk();
         final PetType petType = PetManager.getInstance().getType(this.pet);
 
         List<Item> foodInRoom =
@@ -202,7 +208,12 @@ public class PetTask extends TickTask {
         if (item == null)
             return false;
 
-        return this.pet.getRoomUser().walkTo(item.getPosition().getX(), item.getPosition().getY());
+        if (!this.pet.getRoomUser().walkTo(item.getPosition().getX(), item.getPosition().getY())) {
+            return false;
+        }
+
+        this.talk();
+        return true;
     }
 
     public void startEating() {
@@ -261,7 +272,6 @@ public class PetTask extends TickTask {
     }
 
     private boolean tryDrink() {
-        this.talk();
         // var petType = PetManager.getInstance().getType(this.pet);
 
         List<Item> drinkInRoom =
@@ -279,7 +289,12 @@ public class PetTask extends TickTask {
         if (item == null)
             return false;
 
-        return this.pet.getRoomUser().walkTo(item.getPosition().getX(), item.getPosition().getY());
+        if (!this.pet.getRoomUser().walkTo(item.getPosition().getX(), item.getPosition().getY())) {
+            return false;
+        }
+
+        this.talk();
+        return true;
     }
 
     public void startDrinking() {
