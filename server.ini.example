@@ -1,0 +1,42 @@
+; Local development config. Copy to server.ini (gitignored) in the directory you run the jar from.
+; Values match docker/docker-compose.dev.yml. Production uses its own server.ini on the prod host.
+
+[Server]
+server.bind=127.0.0.1
+server.port=12321
+server.limit.bandwidth=false
+server.limit.bandwidth.amount=40960
+
+[Rcon]
+rcon.bind=127.0.0.1
+rcon.port=0
+
+[Mus]
+mus.bind=127.0.0.1
+mus.port=12322
+
+[Database]
+mysql.hostname=127.0.0.1
+mysql.port=3306
+mysql.username=kepler
+mysql.password=kepler
+mysql.database=kepler
+
+[RabbitMQ]
+rabbitmq.hostname=127.0.0.1
+rabbitmq.port=5672
+rabbitmq.username=kepler
+rabbitmq.password=kepler
+
+[Sentry]
+; Leave empty locally so dev errors don't end up in the production Sentry project.
+sentry.dsn=
+sentry.environment=development
+sentry.debug=false
+
+[Logging]
+log.received.packets=false
+log.sent.packets=false
+
+[Console]
+debug=true

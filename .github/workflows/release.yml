@@ -68,11 +68,11 @@ jobs:
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "previous_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
 
-      - name: Set up JDK 11
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: 11
-          distribution: 'adopt'
+          java-version: 21
+          distribution: 'temurin'
           cache: gradle
 
       - name: Set up QEMU

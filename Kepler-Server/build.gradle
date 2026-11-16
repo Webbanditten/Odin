@@ -1,87 +1,69 @@
-apply plugin: 'java'
-apply plugin: 'application'
-
-java {
-    sourceCompatibility = JavaVersion.toVersion("1.11")
-    targetCompatibility = JavaVersion.toVersion("1.11")
+plugins {
+    id 'java'
+    id 'application'
 }
 
-mainClassName = 'org.alexdev.kepler.Kepler'
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+application {
+    mainClass = 'org.alexdev.kepler.Kepler'
+}
 
 repositories {
-    flatDir {
-        dirs 'libs'
-    }
-    maven { url 'https://jitpack.io' }
     mavenCentral()
+    maven { url = 'https://jitpack.io' } // chesslib only
 }
 
 dependencies {
-    implementation group: 'io.sentry', name: 'sentry', version: '7.14.0'
-    implementation 'com.rabbitmq:amqp-client:5.17.0'
-    implementation group: 'com.google.code.gson', name: 'gson', version: '2.8.5'
-    implementation 'com.maxmind.geoip2:geoip2:2.12.0'
+    // Networking
+    implementation 'io.netty:netty-all:4.2.20.Final'
 
-    // https://mvnrepository.com/artifact/com.zaxxer/HikariCP
-    implementation group: 'com.zaxxer', name: 'HikariCP', version: '3.4.1'
+    // Database
+    implementation 'org.mariadb.jdbc:mariadb-java-client:3.5.11'
+    implementation 'com.zaxxer:HikariCP:7.1.0'
 
-    // https://mvnrepository.com/artifact/org.mariadb.jdbc/mariadb-java-client
-    implementation group: 'org.mariadb.jdbc', name: 'mariadb-java-client', version: '2.3.0'
+    // Logging: reload4j is the maintained drop-in for the log4j 1.2 API (LoggingConfiguration uses it)
+    implementation 'org.slf4j:slf4j-api:2.0.20'
+    implementation 'org.slf4j:slf4j-reload4j:2.0.20'
+    implementation 'ch.qos.reload4j:reload4j:1.2.27'
 
-    // https://mvnrepository.com/artifact/io.netty/netty-all
-    implementation group: 'io.netty', name: 'netty-all', version: '4.1.33.Final'
+    // Messaging / monitoring
+    implementation 'com.rabbitmq:amqp-client:5.37.1'
+    implementation 'io.sentry:sentry:8.64.0'
 
-    // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
-    implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
+    // Utilities
+    implementation 'org.apache.commons:commons-configuration2:2.15.1'
+    implementation 'org.apache.commons:commons-lang3:3.22.0'
+    implementation 'com.google.code.gson:gson:2.15.0'
 
-    // https://mvnrepository.com/artifact/org.slf4j/slf4j-log4j12
-    implementation group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.25'
+    // Argon2 password hashing (bundles libsodium natives, incl. macOS arm64)
+    implementation 'com.goterl:lazysodium-java:5.2.0'
+    implementation 'net.java.dev.jna:jna:5.19.1'
 
-    // https://mvnrepository.com/artifact/log4j/log4j/1.2.17
-    implementation group: 'log4j', name: 'log4j', version: '1.2.17'
-
-    // https://mvnrepository.com/artifact/org.apache.commons/commons-configuration2
-    implementation group: 'org.apache.commons', name: 'commons-configuration2', version: '2.2'
-
-    // https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
-    implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.9'
-
-    // https://mvnrepository.com/artifact/commons-lang/commons-lang
-    implementation group: 'commons-lang', name: 'commons-lang', version: '2.6'
-
-    // https://mvnrepository.com/artifact/commons-validator/commons-validator
-    implementation group: 'commons-validator', name: 'commons-validator', version: '1.6'
-
-    // https://mvnrepository.com/artifact/com.google.code.gson/gson
-    implementation group: 'com.google.code.gson', name: 'gson', version: '2.8.0'
+    // Chess furni
     implementation 'com.github.bhlangonijr:chesslib:1.1.1'
-    implementation 'com.goterl:lazysodium-java:5.0.1'
-    implementation "net.java.dev.jna:jna:5.8.0"
 }
 
-// Create fat jar with libraries inside of it.
-task fatJar(type: Jar) {
-    zip64 true
-    duplicatesStrategy 'exclude'
+// Fat jar with every runtime dependency inside; this is what Docker and prod run.
+tasks.register('fatJar', Jar) {
+    zip64 = true
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    archiveBaseName = project.name + '-all'
     manifest {
-        attributes 'Main-Class': mainClassName
+        attributes 'Main-Class': application.mainClass
     }
-    baseName = project.name + '-all'
     from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA'
+    // Netty ships META-INF/license/ (a directory) while other jars ship a META-INF/LICENSE file. On a
+    // case-insensitive filesystem (macOS) those collide when lazysodium extracts the jar to load libsodium.
+    exclude 'META-INF/license/**'
     with jar
 }
-
-// Create jar with no libraries inside of it, used when creating with "gradle distZip" and
-// libraries are then to be stored in the folder next to it called 'dependency-jars'
-// https://vocon-it.com/2016/11/15/how-to-build-a-lean-jar-file-with-gradle/
-
-/*jar {
-    manifest {
-        attributes (
-                'Main-Class': mainClassName,
-                "Class-Path": '. dependency-jars/' + configurations.compile.collect {
-                    it.getName()
-                }.join(' dependency-jars/')
-        )
-    }
-}*/

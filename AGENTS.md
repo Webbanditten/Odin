@@ -3,36 +3,38 @@
 ## Build Instructions
 
 ### Environment
-- **Language:** Java 11 (AdoptOpenJDK/Temurin 11)
-- **Build tool:** Gradle 7.2 (via wrapper `gradlew`)
-- **IDE:** IntelliJ IDEA (delegated build disabled — uses IntelliJ's own compiler)
+- **Language:** Java 21 (Temurin/OpenJDK 21 LTS). The Gradle toolchain is pinned to 21.
+- **Build tool:** Gradle 9.9.1 via the wrapper (`./gradlew`). Never use a system `gradle`.
+- **IDE:** IntelliJ IDEA (delegated build disabled, so IntelliJ uses its own compiler). Set the Project SDK to 21.
 
-### Building Locally
-
-The `gradlew` script has Windows line endings (`\r\n`) which breaks under WSL/Linux shells. 
-
-**Option 1: Build via Docker (recommended for CI/headless)**
+### Building
 ```bash
-docker run --rm -v "$(pwd):/project" -w /project adoptopenjdk:11-jdk-hotspot sh -c "sed -i 's/\r$//' gradlew && chmod +x gradlew && ./gradlew compileJava"
+export JAVA_HOME=$(/usr/libexec/java_home -v 21 2>/dev/null || echo /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home)
+./gradlew fatJar
+```
+Output: `Kepler-Server/build/libs/Kepler-Server-all.jar`.
+
+Headless/Docker alternative:
+```bash
+docker run --rm -v "$(pwd):/project" -w /project eclipse-temurin:21-jdk ./gradlew fatJar
 ```
 
-**Option 2: Build a fat JAR (for deployment)**
+### Running locally (macOS / Apple Silicon works)
 ```bash
-docker run --rm -v "$(pwd):/project" -w /project adoptopenjdk:11-jdk-hotspot sh -c "sed -i 's/\r$//' gradlew && chmod +x gradlew && ./gradlew fatJar"
+docker compose -f docker/docker-compose.dev.yml up -d   # MariaDB 10.4.18 + RabbitMQ, bound to 127.0.0.1
+# seed: gunzip -c <prod dump>.sql.gz | docker exec -i odin-dev-mariadb mysql -uroot -podin
+cp server.ini.example server.ini                         # gitignored; matches the dev compose credentials
+$JAVA_HOME/bin/java -jar Kepler-Server/build/libs/Kepler-Server-all.jar
 ```
-Output: `Kepler-Server/build/libs/Kepler-Server-all.jar`
-
-**Option 3: IntelliJ IDEA**
-- Open the project in IntelliJ
-- Ensure Project SDK is set to Java 11
-- IntelliJ handles the build automatically (gradle.xml has `delegatedBuild=false`)
+Run it from the repo root so the server finds `server.ini` and `tools/snowstorm_maps`. Logs go to stdout,
+`server.log` and `error.log`.
 
 ### Common Build Issues
 
 | Issue | Cause | Fix |
 |-------|-------|-----|
-| `Unsupported class file major version 68` | System Gradle using wrong JDK (e.g. Java 24) | Use Docker build or set `JAVA_HOME` to JDK 11 |
-| `/usr/bin/env: 'sh\r': No such file or directory` | Windows line endings in `gradlew` | Run `sed -i 's/\r$//' gradlew` before executing |
+| `Unsupported class file major version` / Gradle fails to start | Wrong JDK on `JAVA_HOME` | Point `JAVA_HOME` at JDK 21 |
+| lazysodium `FileAlreadyExistsException ... META-INF/license` | Case-insensitive FS collision in the fat jar | Already excluded in `fatJar`. Keep the `META-INF/license/**` exclude |
 | `gradle compileJava` fails locally | System Gradle version incompatible | Use the wrapper (`./gradlew`) not system `gradle` |
 
 ## Project Structure
@@ -51,7 +53,7 @@ Kepler/
 │   ├── kepler.sql           # Main database schema
 │   └── migrations/          # Incremental SQL migrations
 ├── dist/                    # Pre-built JAR for Docker
-├── Dockerfile              # Runtime container (openjdk:12, runs from dist/)
+├── Dockerfile              # Runtime container (eclipse-temurin:21-jre, runs from dist/)
 └── settings.gradle         # Root Gradle settings
 ```
 
@@ -84,7 +86,7 @@ public static void doSomething(int param) {
 
 The production Docker image runs from a pre-built JAR:
 ```dockerfile
-FROM openjdk:12
+FROM eclipse-temurin:21-jre
 COPY ./dist /usr/src/app
 WORKDIR /usr/src/app
 EXPOSE 12322 12321

@@ -1,0 +1,54 @@
+# Local development dependencies for Odin and OdinCMS (MariaDB + RabbitMQ).
+#
+#   docker compose -f docker/docker-compose.dev.yml up -d
+#
+# Versions match production. Ports are bound to 127.0.0.1 only. The credentials
+# below are local-only defaults, so never reuse them anywhere else.
+#
+# Seed the database from a production dump (see the workspace CLAUDE.md):
+#   gunzip -c ../backups/kepler_prod_<date>.sql.gz \
+#     | docker exec -i odin-dev-mariadb mysql -uroot -podin
+name: odin-dev
+
+services:
+  mariadb:
+    image: mariadb:10.4.18-focal
+    container_name: odin-dev-mariadb
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: odin
+      MYSQL_DATABASE: kepler
+      MYSQL_USER: kepler
+      MYSQL_PASSWORD: kepler
+      TZ: Europe/Copenhagen
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - mariadb:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-podin"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:3.11.16-management-alpine
+    container_name: odin-dev-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: kepler
+      RABBITMQ_DEFAULT_PASS: kepler
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+    volumes:
+      - rabbitmq:/var/lib/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+volumes:
+  mariadb:
+  rabbitmq:
