@@ -1,5 +1,6 @@
 package org.alexdev.kepler.game.club;
 
+import org.alexdev.kepler.dao.mysql.PurchaseLogDao;
 import org.alexdev.kepler.dao.mysql.ClubGiftDao;
 import org.alexdev.kepler.dao.mysql.CurrencyDao;
 import org.alexdev.kepler.dao.mysql.PlayerDao;
@@ -121,6 +122,7 @@ public class ClubSubscription {
 
         if (credits > 0) {
             PurseDao.logCreditSpend("club_habbo", player.getDetails(), -credits);
+            PurchaseLogDao.log(player.getDetails(), PurchaseLogDao.CLUB, null, null, null, "Habbo Club (" + days + " dage)", credits, null);
             CurrencyDao.decreaseCredits(player.getDetails(), credits);
             player.send(new CREDIT_BALANCE(player.getDetails()));
         }

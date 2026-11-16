@@ -1,5 +1,6 @@
 package org.alexdev.kepler.messages.incoming.catalogue;
 
+import org.alexdev.kepler.dao.mysql.PurchaseLogDao;
 import org.alexdev.kepler.dao.mysql.CurrencyDao;
 import org.alexdev.kepler.dao.mysql.PlayerDao;
 import org.alexdev.kepler.dao.mysql.PurseDao;
@@ -131,8 +132,22 @@ public class GRPC implements MessageEvent {
             }
         }
 
+        boolean isGift = data[5].equals("1");
+        Integer receiverId = null;
+
+        if (isGift) {
+            int id = PlayerDao.getId(data[6]);
+            receiverId = id > 0 ? id : null;
+        }
+
         CurrencyDao.decreaseCredits(player.getDetails(), price);
-        PurseDao.logCreditSpend("stuff_store", player.getDetails(), -price);
+        // A per-item type, so the in-game purse names what was bought (external_texts.php has a
+        // transaction_system_buy_<id> / _giftbuy_<id> text for every catalogue item).
+        PurseDao.logCreditSpend((isGift ? "giftbuy_" : "buy_") + item.getId(), player.getDetails(), -price);
+        PurchaseLogDao.log(player.getDetails(), isGift ? PurchaseLogDao.GIFT : PurchaseLogDao.CATALOGUE, receiverId,
+                item.getId(), item.getDefinition() != null ? item.getDefinition().getId() : null,
+                item.getDefinition() != null && !item.isPackage() ? item.getDefinition().getName() : item.getName(),
+                price, pageStream.get().getFuse());
         player.send(new CREDIT_BALANCE(player.getDetails()));
     }
 }
