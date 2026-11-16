@@ -38,11 +38,14 @@ public class GameScheduler implements Runnable {
     private static GameScheduler instance;
 
     private GameScheduler() {
-        this.schedulerService = createNewScheduler();
-        this.gameScheduler = this.schedulerService.scheduleAtFixedRate(this, 0, 1, TimeUnit.SECONDS);
+        // The queues must exist before the first tick: scheduling with no initial delay can run run() before the
+        // constructor finishes ("creditsHandoutQueue is null" at startup). Submitting the task afterwards also makes
+        // these writes visible to the scheduler thread.
         this.creditsHandoutQueue = new LinkedBlockingQueue<>();
         this.itemSavingQueue = new LinkedBlockingDeque<>();
         this.itemDeletionQueue = new LinkedBlockingDeque<>();
+        this.schedulerService = createNewScheduler();
+        this.gameScheduler = this.schedulerService.scheduleAtFixedRate(this, 0, 1, TimeUnit.SECONDS);
     }
 
     /* (non-Javadoc)
@@ -210,7 +213,7 @@ public class GameScheduler implements Runnable {
      *
      * @return the instance
      */
-    public static GameScheduler getInstance() {
+    public static synchronized GameScheduler getInstance() {
         if (instance == null) {
             instance = new GameScheduler();
         }
