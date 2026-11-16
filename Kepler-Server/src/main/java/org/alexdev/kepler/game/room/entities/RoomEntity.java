@@ -31,6 +31,8 @@ import org.alexdev.kepler.messages.outgoing.rooms.user.USER_OBJECTS;
 import org.alexdev.kepler.messages.outgoing.rooms.user.USER_STATUSES;
 import org.alexdev.kepler.util.config.GameConfiguration;
 
+import java.util.Deque;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -49,7 +51,10 @@ public abstract class RoomEntity {
     private RoomTimerManager timerManager;
 
     private Map<String, RoomUserStatus> statuses;
-    private LinkedList<Position> path;
+    // Written by the network thread (walkTo, stopWalking) and consumed by the room's task thread
+    // (EntityTask, BattleBallTask). walkTo swaps in a new deque, so the reference is volatile and
+    // every step is taken with pollFirst(): nothing can see a half-built path or throw on an empty one.
+    private volatile Deque<Position> path;
 
     private int instanceId;
     private Item lastItemInteraction;
@@ -63,7 +68,7 @@ public abstract class RoomEntity {
     public RoomEntity(Entity entity) {
         this.entity = entity;
         this.statuses = new ConcurrentHashMap<>();
-        this.path = new LinkedList<>();
+        this.path = new ConcurrentLinkedDeque<>();
         this.timerManager = new RoomTimerManager(this);
     }
 
@@ -178,7 +183,7 @@ public abstract class RoomEntity {
         }
 
         if (pathList.size() > 0) {
-            this.path = pathList;
+            this.path = new ConcurrentLinkedDeque<>(pathList);
             this.isWalking = true;
             return true;
         }
@@ -826,7 +831,7 @@ public abstract class RoomEntity {
         return this.statuses;
     }
 
-    public LinkedList<Position> getPath() {
+    public Deque<Position> getPath() {
         return path;
     }
 

@@ -126,8 +126,11 @@ public class BattleBallTask implements Runnable {
             }
 
             // We still have more tiles left, so lets continue moving
-            if (roomEntity.getPath().size() > 0) {
-                Position next = roomEntity.getPath().pop();
+            // pollFirst(), not a size check and pop(): the network thread changes the path concurrently
+            // (see RoomEntity.path).
+            Position next = roomEntity.getPath().pollFirst();
+
+            if (next != null) {
 
                 RoomTile previousTile = roomEntity.getTile();
                 RoomTile nextTile = roomEntity.getRoom().getMapping().getTile(next);

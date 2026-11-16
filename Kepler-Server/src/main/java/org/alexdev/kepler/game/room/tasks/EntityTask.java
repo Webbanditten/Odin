@@ -104,11 +104,10 @@ public class EntityTask implements Runnable {
             }
 
             // We still have more tiles left, so lets continue moving
-            // walkTo() and stopWalking() replace or clear the path from the network thread, so it can
-            // change between a size check and pop() (NoSuchElementException), and an entry can be null
-            // (NPE in RoomTile.isValidTile). Seen ~500 times in two minutes of a BattleBall game. Take one
-            // element without throwing; nothing left ends the walk like an empty path does.
-            Position next = roomEntity.getPath().isEmpty() ? null : roomEntity.getPath().pollFirst();
+            // The network thread replaces or clears the path (walkTo, stopWalking) while this runs, so take
+            // the step with pollFirst() on the concurrent deque: no size-check-then-pop race. Null means
+            // nothing is left, which ends the walk like an empty path does.
+            Position next = roomEntity.getPath().pollFirst();
 
             if (next != null) {
 

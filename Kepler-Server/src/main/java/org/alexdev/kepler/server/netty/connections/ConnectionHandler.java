@@ -53,7 +53,7 @@ public class ConnectionHandler extends SimpleChannelInboundHandler<NettyRequest>
             }
         }
 
-        Player player = new Player(new NettyPlayerNetwork(ctx.channel(), this.server.getConnectionIds().getAndIncrement()));
+        Player player = new Player(new NettyPlayerNetwork(ctx.channel(), this.server.getConnectionIds().getAndUpdate(id -> id == Integer.MAX_VALUE ? 0 : id + 1)));
         ctx.channel().attr(Player.PLAYER_KEY).set(player);
 
         if (!this.server.getChannels().add(ctx.channel()) || Kepler.isShuttingdown()) {
@@ -77,7 +77,6 @@ public class ConnectionHandler extends SimpleChannelInboundHandler<NettyRequest>
 
     @Override
     public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
-        this.server.getConnectionIds().getAndDecrement(); // Decrement because we don't want it to reach Integer.MAX_VALUE
         this.server.getChannels().remove(ctx.channel());
 
         Player player = ctx.channel().attr(Player.PLAYER_KEY).get();
