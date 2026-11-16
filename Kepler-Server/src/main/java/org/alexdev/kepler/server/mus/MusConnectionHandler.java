@@ -56,7 +56,6 @@ public class MusConnectionHandler extends SimpleChannelInboundHandler<MusMessage
 
     @Override
     public void channelUnregistered(ChannelHandlerContext ctx) {
-        this.server.getConnectionIds().getAndDecrement(); // Decrement because we don't want it to reach Integer.MAX_VALUE
         this.server.getChannels().remove(ctx.channel());
 
         //log.info("[MUS] Disconnection from {}", ctx.channel().remoteAddress().toString().replace("/", "").split(":")[0]);
