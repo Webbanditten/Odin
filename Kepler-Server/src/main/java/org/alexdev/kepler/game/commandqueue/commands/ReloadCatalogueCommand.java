@@ -14,13 +14,9 @@ public class ReloadCatalogueCommand implements Command {
         CatalogueManager.reset();
 
         for (Player p : PlayerManager.getInstance().getPlayers()) {
-            // Only clients that loaded a catalogue get the new index, in their catalogue's format; the others load it
-            // when they open it (an old client refreshes with an empty request, which mustn't look like the v31 catalogue).
-            if (p.getNewCatalogue() == null) {
-                continue;
-            }
-
-            CatalogueManager.getInstance().sendIndex(p);
+            p.send(new CATALOGUE_PAGES(
+                    CatalogueManager.getInstance().getPagesForRank(p.getDetails().getFuseRights(), p.getDetails().hasClubSubscription())
+            ));
             p.send(new REFRESH_CATALOGUE());
         }
     }
