@@ -10,6 +10,7 @@ public class WobbleSquabblePlayer {
     private int balance;
     private boolean rebalanced;
     private boolean hit;
+    private int hits;
     private boolean requiresUpdate;
     private WobbleSquabbleMove move;
     private int order;
@@ -109,6 +110,32 @@ public class WobbleSquabblePlayer {
      */
     public void setHit(boolean hit) {
         this.hit = hit;
+    }
+
+    /**
+     * Count a hit that landed on the opponent (for the highscores).
+     */
+    public void addHit() {
+        this.hits++;
+    }
+
+    /**
+     * Get how many hits this player landed on the opponent.
+     *
+     * @return the number of hits
+     */
+    public int getHits() {
+        return hits;
+    }
+
+    /**
+     * The highscore points for this game: every hit that landed, plus the bonus for knocking the opponent in.
+     *
+     * @param won whether this player won
+     * @return the points
+     */
+    public int getScore(boolean won) {
+        return this.hits * WobbleSquabbleManager.getPointsPerHit() + (won ? WobbleSquabbleManager.getPointsForWin() : 0);
     }
 
     /**

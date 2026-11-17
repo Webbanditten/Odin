@@ -143,6 +143,17 @@ public class GameDao {
      */
     public static int addGamePlayed(GameType type, String name, String creator, int mapId, int teamCount, int playerCount,
                                     int winningTeam, int winningTeamScore, String extraData) {
+        return addGamePlayed(type.name().toLowerCase(), name, creator, mapId, teamCount, playerCount, winningTeam, winningTeamScore, extraData);
+    }
+
+    /**
+     * Record a finished game of any type in games_played.gametype ("battleball", "snowstorm", "wobblesquabble").
+     * Wobble Squabble isn't a {@link GameType}: those are the lobby games.
+     *
+     * @return the new games_played id, or -1 if it couldn't be stored
+     */
+    public static int addGamePlayed(String gameType, String name, String creator, int mapId, int teamCount, int playerCount,
+                                    int winningTeam, int winningTeamScore, String extraData) {
         Connection sqlConnection = null;
         PreparedStatement preparedStatement = null;
         ResultSet keys = null;
@@ -150,7 +161,7 @@ public class GameDao {
         try {
             sqlConnection = Storage.getStorage().getConnection();
             preparedStatement = sqlConnection.prepareStatement("INSERT INTO games_played (gametype, name, creator, map_id, team_count, player_count, winning_team, winning_team_score, extra_data) VALUES (?,?,?,?,?,?,?,?,?)", java.sql.Statement.RETURN_GENERATED_KEYS);
-            preparedStatement.setString(1, type.name().toLowerCase());
+            preparedStatement.setString(1, gameType);
             preparedStatement.setString(2, name == null ? "" : name);
             preparedStatement.setString(3, creator == null ? "" : creator);
             preparedStatement.setInt(4, mapId);
@@ -181,6 +192,13 @@ public class GameDao {
      * Add a player's score for one game. gameId, teamId and teamScore below 0 and a null won are stored as NULL.
      */
     public static void addHighscore(PlayerDetails details, GameType type, int amount, int gameId, int teamId, int teamScore, Boolean won) throws SQLException {
+        addHighscore(details, type.name().toLowerCase(), amount, gameId, teamId, teamScore, won);
+    }
+
+    /**
+     * Add a player's score for one game of any type in highscores.gametype (see {@link #addGamePlayed(String, String, String, int, int, int, int, int, String)}).
+     */
+    public static void addHighscore(PlayerDetails details, String gameType, int amount, int gameId, int teamId, int teamScore, Boolean won) throws SQLException {
         Connection sqlConnection = null;
         PreparedStatement preparedStatement = null;
 
@@ -188,7 +206,7 @@ public class GameDao {
             sqlConnection = Storage.getStorage().getConnection();
             preparedStatement = Storage.getStorage().prepare("INSERT INTO highscores (uid, gametype, score, game_id, team_id, team_score, won) VALUES (?,?,?,?,?,?,?)", sqlConnection);
             preparedStatement.setInt(1, details.getId());
-            preparedStatement.setString(2, type.name().toLowerCase());
+            preparedStatement.setString(2, gameType);
             preparedStatement.setInt(3, amount);
             if (gameId > 0) preparedStatement.setInt(4, gameId); else preparedStatement.setNull(4, java.sql.Types.INTEGER);
             if (teamId >= 0) preparedStatement.setInt(5, teamId); else preparedStatement.setNull(5, java.sql.Types.INTEGER);

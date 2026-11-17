@@ -1,6 +1,7 @@
 package org.alexdev.kepler.game.games.wobblesquabble;
 
 import org.alexdev.kepler.dao.mysql.CurrencyDao;
+import org.alexdev.kepler.dao.mysql.GameDao;
 import org.alexdev.kepler.game.GameScheduler;
 import org.alexdev.kepler.game.item.Item;
 import org.alexdev.kepler.game.item.interactors.InteractionType;
@@ -12,12 +13,16 @@ import org.alexdev.kepler.messages.outgoing.user.currencies.TICKET_BALANCE;
 import org.alexdev.kepler.messages.outgoing.wobblesquabble.*;
 import org.alexdev.kepler.messages.types.MessageComposer;
 import org.alexdev.kepler.util.DateUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 public class WobbleSquabbleGame implements Runnable {
+    private static final Logger log = LoggerFactory.getLogger(WobbleSquabbleGame.class);
+
     private static int LEFT_X = 21;
     private static int LEFT_Y = 15;
 
@@ -141,6 +146,7 @@ public class WobbleSquabbleGame implements Runnable {
                 // Are we standing next to our opponent?
                 if (opponentDistance <= 2/*(wsPlayer.getPosition() + 1) == wsOpponent.getPosition() || (wsPlayer.getPosition() - 1) == wsOpponent.getPosition()*/) {
                     wsOpponent.setHit(true);
+                    wsPlayer.addHit();
 
                     int balanceCalculated = WobbleSquabbleManager.WS_HIT_POINTS + ThreadLocalRandom.current().nextInt(10);
                     wsOpponent.setBalance(wsOpponent.getBalance() + balanceCalculated);
@@ -156,6 +162,7 @@ public class WobbleSquabbleGame implements Runnable {
                 // Are we standing next to our opponent?
                 if (opponentDistance <= 2/*(wsPlayer.getPosition() + 1) == wsOpponent.getPosition() || (wsPlayer.getPosition() - 1) == wsOpponent.getPosition()*/) {
                     wsOpponent.setHit(true);
+                    wsPlayer.addHit();
 
                     int balanceCalculated = WobbleSquabbleManager.WS_HIT_POINTS + ThreadLocalRandom.current().nextInt(10);
                     wsOpponent.setBalance(wsOpponent.getBalance() - balanceCalculated);
@@ -214,6 +221,8 @@ public class WobbleSquabbleGame implements Runnable {
         this.hasGameEnded = true;
         int loser = winner == 1 ? 0 : 1;
 
+        this.recordScores(winner);
+
         WobbleSquabblePlayer winnerPlayer = this.getPlayer(winner);
         WobbleSquabblePlayer loserPlayer = this.getPlayer(loser);
 
@@ -252,6 +261,42 @@ public class WobbleSquabbleGame implements Runnable {
             this.removePlayer(loser);
         }*/
 
+    }
+
+    /**
+     * Record the duel for the highscores: a games_played row and one highscores row per player, scored by
+     * {@link WobbleSquabblePlayer#getScore(boolean)}. Runs off the room's game tick.
+     *
+     * @param winner the winner's side (0 or 1), or -1 when the game timed out and both fell in
+     */
+    private void recordScores(int winner) {
+        if (!WobbleSquabbleManager.isRecordingPoints()) {
+            return;
+        }
+
+        WobbleSquabblePlayer left = this.getPlayer(0);
+        WobbleSquabblePlayer right = this.getPlayer(1);
+
+        if (left == null || right == null) {
+            return;
+        }
+
+        GameScheduler.getInstance().getService().execute(() -> {
+            try {
+                WobbleSquabblePlayer winnerPlayer = winner == -1 ? null : this.getPlayer(winner);
+                int gameId = GameDao.addGamePlayed(WobbleSquabbleManager.HIGHSCORE_GAME_TYPE, "", "", 0, 2, 2, winner,
+                        winnerPlayer == null ? 0 : winnerPlayer.getScore(true), "hits " + left.getHits() + "-" + right.getHits());
+
+                for (WobbleSquabblePlayer wsPlayer : List.of(left, right)) {
+                    boolean won = wsPlayer.getOrder() == winner;
+                    int score = wsPlayer.getScore(won);
+                    GameDao.addHighscore(wsPlayer.getPlayer().getDetails(), WobbleSquabbleManager.HIGHSCORE_GAME_TYPE, score, gameId,
+                            wsPlayer.getOrder(), score, won);
+                }
+            } catch (Exception e) {
+                log.error("Could not record the Wobble Squabble scores", e);
+            }
+        });
     }
 
     /**
