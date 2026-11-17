@@ -9,6 +9,8 @@ import org.alexdev.kepler.game.item.base.ItemDefinition;
 import org.alexdev.kepler.game.item.interactors.InteractionType;
 import org.alexdev.kepler.game.pets.PetManager;
 import org.alexdev.kepler.game.player.Player;
+import org.alexdev.kepler.messages.outgoing.catalogue.CATALOGUE_INDEX_V31;
+import org.alexdev.kepler.messages.outgoing.catalogue.CATALOGUE_PAGES;
 import org.alexdev.kepler.messages.outgoing.user.currencies.FILM;
 import org.alexdev.kepler.util.DateUtil;
 import org.alexdev.kepler.util.StringUtil;
@@ -23,12 +25,19 @@ public class CatalogueManager {
     private List<CataloguePage> cataloguePageList;
     private List<CatalogueItem> catalogueItemList;
     private List<CataloguePackage> cataloguePackageList;
+    private java.util.Set<String> libraryImages;
 
     public CatalogueManager() {
         this.cataloguePageList = CatalogueDao.getPages();
         this.cataloguePackageList = CatalogueDao.getPackages();
         this.catalogueItemList = CatalogueDao.getItems();
+        this.libraryImages = CatalogueDao.getLibraryImages();
         this.loadPackages();
+    }
+
+    /** Page images that come from the image library (see catalogue_library_images). */
+    public java.util.Set<String> getLibraryImages() {
+        return libraryImages;
     }
 
     public List<Item> purchase(Player player, CatalogueItem item, String extraData, String overrideName, long timestamp) throws SQLException {
@@ -252,6 +261,39 @@ public class CatalogueManager {
         }
 
         return cataloguePagesForRank;
+    }
+
+    /**
+     * Send the catalogue index the player's client understands: the v31 tree (hh_cat_new) or the old list.
+     */
+    public void sendIndex(Player player) {
+        List<CataloguePage> pages = this.getPagesForRank(player.getDetails().getFuseRights(), player.getDetails().hasClubSubscription());
+
+        if (player.hasNewCatalogue()) {
+            player.send(new CATALOGUE_INDEX_V31(pages));
+        } else {
+            // The old catalogue has a flat index: v31 folders (pages without a layout) aren't pages there.
+            player.send(new CATALOGUE_PAGES(pages.stream().filter(CataloguePage::isNavigatable).toList()));
+        }
+    }
+
+    /**
+     * Whether the player may open the page: its fuse, and Habbo Club for club pages.
+     */
+    public boolean canOpen(Player player, CataloguePage page) {
+        if (page.isClubOnly() && !player.getDetails().hasClubSubscription()) {
+            return false;
+        }
+
+        return player.getDetails().getFuseRights().stream().anyMatch(r -> r.getFuse().equalsIgnoreCase(page.getFuse()));
+    }
+
+    public CataloguePage getCataloguePageById(int id) {
+        return this.cataloguePageList.stream().filter(p -> p.getId() == id).findFirst().orElse(null);
+    }
+
+    public CatalogueItem getCatalogueItemById(int id) {
+        return this.catalogueItemList.stream().filter(i -> i.getId() == id).findFirst().orElse(null);
     }
 
     /**
