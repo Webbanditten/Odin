@@ -42,14 +42,31 @@ public class VOUCHER_REDEEM_OK extends MessageComposer {
         if (this.redeemableItems != null && this.redeemableItems.size() > 0) {
             if (this.redeemableItems.size() <= 2) {
                 for (CatalogueItem catalogueItem : this.redeemableItems) {
-                    response.writeString(catalogueItem.getDefinition().getName());
-                    response.writeString(catalogueItem.getDefinition().getDescription());
+                    response.writeString(name(catalogueItem));
+                    response.writeString(description(catalogueItem));
                 }
             } else {
-                response.writeString(this.redeemableItems.stream().map(item -> item.getDefinition().getName()).collect(Collectors.joining(", " )));
+                response.writeString(this.redeemableItems.stream().map(VOUCHER_REDEEM_OK::name).collect(Collectors.joining(", " )));
                 response.writeString("");
             }
         }
+    }
+
+    /** A package has no definition, it and special-sprite items (posters) have their own name; others the furni's. */
+    private static String name(CatalogueItem item) {
+        if ((item.isPackage() || item.getItemSpecialId() > 0) && item.getName() != null && !item.getName().isEmpty()) {
+            return item.getName();
+        }
+
+        return item.getDefinition() != null ? item.getDefinition().getName() : item.getSaleCode();
+    }
+
+    private static String description(CatalogueItem item) {
+        if ((item.isPackage() || item.getItemSpecialId() > 0) && item.getDescription() != null && !item.getDescription().isEmpty()) {
+            return item.getDescription();
+        }
+
+        return item.getDefinition() != null ? item.getDefinition().getDescription() : "";
     }
 
     @Override

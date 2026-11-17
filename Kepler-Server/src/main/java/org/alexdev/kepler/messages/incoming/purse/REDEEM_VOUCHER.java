@@ -28,23 +28,26 @@ public class REDEEM_VOUCHER implements MessageEvent {
             return;
         }
 
-        String voucherName = reader.readString();
+        String voucherName = reader.readString().trim();
 
-        //Check and get voucher
+        if (voucherName.isEmpty()) {
+            player.send(new VOUCHER_REDEEM_ERROR(RedeemError.INVALID));
+            return;
+        }
+
+        // Claims the voucher (and logs it in vouchers_history) in one transaction.
         Voucher voucher = PurseDao.redeemVoucher(voucherName, player.getDetails().getId());
 
-        //No voucher was found
         if (voucher == null) {
             player.send(new VOUCHER_REDEEM_ERROR(RedeemError.INVALID));
             return;
         }
 
-        //Redeem items
         List<Item> items = new ArrayList<>();
         List<CatalogueItem> redeemedItems = new ArrayList<>();
 
         for (String saleCode : voucher.getItems()) {
-            var catalogueItem = CatalogueManager.getInstance().getCatalogueItem(saleCode);
+            CatalogueItem catalogueItem = CatalogueManager.getInstance().getVoucherItem(saleCode);
 
             if (catalogueItem == null) {
                 Log.getErrorLogger().error("Could not redeem voucher " + voucherName + " with sale code: " + saleCode);
@@ -55,16 +58,12 @@ public class REDEEM_VOUCHER implements MessageEvent {
             items.addAll(CatalogueManager.getInstance().purchase(player, catalogueItem, "", null, DateUtil.getCurrentTimeSeconds()));
         }
 
-        //A voucher was found, so redeem items and redeem credits
         player.send(new VOUCHER_REDEEM_OK(redeemedItems));
 
         if (items.size() > 0) {
             player.getInventory().getView("new");
         }
 
-        PurseDao.logVoucher(voucherName, player.getDetails().getId(), voucher.getCredits(), redeemedItems);
-
-        //This voucher gives credits, so increase credits balance
         if (voucher.getCredits() > 0) {
             CurrencyDao.increaseCredits(player.getDetails(), voucher.getCredits());
             player.send(new CREDIT_BALANCE(player.getDetails()));
