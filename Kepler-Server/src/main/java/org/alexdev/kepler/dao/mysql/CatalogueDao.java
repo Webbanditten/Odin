@@ -108,7 +108,7 @@ public class CatalogueDao {
             preparedStatement = Storage.getStorage().prepare("SELECT \n" +
                     "cait.id, cait.page_id, cait.order_id, cait.price, cait.is_hidden, cait.amount, cait.definition_id,cait.item_specialspriteid,cait.is_package,cait.package_name,cait.package_description,cait.sale_code,\n" +
                     "IF(cait.is_package OR cait.item_specialspriteid, cait.name, (SELECT name FROM items_definitions WHERE id = cait.definition_id)) AS name,IF(cait.is_package OR cait.item_specialspriteid, cait.description, (SELECT description FROM items_definitions WHERE id = cait.definition_id)) AS description\n" +
-                    "FROM catalogue_items AS cait", sqlConnection);
+                    "FROM catalogue_items AS cait ORDER BY cait.order_id ASC, cait.id ASC", sqlConnection);
             resultSet = preparedStatement.executeQuery();
 
             while (resultSet.next()) {
