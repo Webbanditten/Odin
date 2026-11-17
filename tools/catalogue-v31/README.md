@@ -21,7 +21,17 @@ request. `master` has the revert (#48, released as v1.25.13 = v1.25.11's code). 
 
 - `hh_cat_new`: three names renamed in its name table (`activateWindowObj` → `activateWindow`, `getSessionHash` →
   `getUniqueID`, `setHeaderMemberName` → `setHeaderImage`), plus `compat.ls` compiled in as the movie script
-  "Compat API" (`getStringVariable`, `decodeUTF8`, which our client lacks).
+  "Compat API" (`getStringVariable`, `decodeUTF8`, which our client lacks). Two fixes for r31 bugs, as parent scripts
+  in its class chains (`variable.index`):
+  - `strip_fix.ls` "Product Strip Fix Class" (between Product Strip Base and Default): Base's `resolveMembers` reuses
+    its product index `i` for the loop over a deal's contents, so downloads registered after a deal carry the wrong
+    `#itemIndex` and those slots keep the loading icon (Start pakker: the chairs after seven deals). Every completed
+    download resolves all slots still without a preview.
+  - `oldpage_fix.ls` "Catalogpage Oldpage Fix Class" (after the Oldpage Wrapper, for plasto, spaces, trophies, pets,
+    recycler, soundmachine, purse): the same loop bug in the wrapper's `define` (Trax: the jukebox after the sound
+    machine deal); the wrapper's `mergeWindow` blanks the old page class's texts after it wrote them, so the pets
+    page's name only showed on a first visit (it re-defines the page class after merging); and a pass-through
+    `renderGridPreview`, because Fuse's `createTimeout` checks `handler()` on the object's own script.
 - `hh_dynamic_downloader_v31`: `getSessionHash` → `getUniqueID`, `decodeUTF8` → `convertSpecialChars`.
 - `hh_cat_gfx_v31`: the pets page's name box is ` ctlg_price_box2` (the coin price box drew coins and broken
   corners there); the tree icons `katalogi_ikoni.purse`/`.pets` re-encoded from JPEG with a pure white background
@@ -43,6 +53,10 @@ request. `master` has the revert (#48, released as v1.25.13 = v1.25.11's code). 
   `default_3x3`; `layout_v31` overrides. Offers: item id, sale code (productdata key), credits, 0 pixels, products
   (type, definition id = furnidata class id, extra, count, -1).
 - GRPC (100) parses both formats into one purchase path; `NO_CREDITS` sends credits and pixels to v31.
+- Offer names (`CatalogueManager.getV31OfferName`): the sale code, or `<sale code>_<item id>` when several catalogue items
+  share it. The client groups a page's offers by name (one group = one product in several currencies), so the 31
+  `wallpaper` and 12 `landscape` items collapsed into one each and the wallpaper picker had a single pattern. The CMS's
+  productdata uses the same names.
 - Page images from the image library go to v31 as `name_<language>` (`catalogue_library_images`, filled by the
   CMS's Publish; setting `catalogue.v31.image.language`, default `da`). The old client adds the language itself.
 - `update.1.40.sql`: `catalogue_pages.parent_id`, `icon`, `colour`, `layout_v31`, table `catalogue_library_images`.
@@ -62,7 +76,8 @@ catalogue_pages` on stdin) checks ids and names first. `tree_rollback.sql` resto
    fill `catalogue_library_images` (the CMS's Publish does it), then restart Odin or Publish so it loads them.
 3. CMS with `feature/catalogue-v31` (revert OdinCMS #84 or merge the branch).
 4. Upload the three casts to `dcr/files/dcr/latest/` and swap `gamedata/external_vars_web.php` for this folder's
-   (keep a backup). On prod both are still there: the casts in `dcr/latest/` (`hh_cat_new.cct` sha1 `c6114aee`,
+   (keep a backup). On prod both are still there, but `hh_cat_new.cct` there is the older build without the fixes (staged build: sha1
+`1c7182ee`; upload that one): the casts in `dcr/latest/` (`hh_cat_new.cct` sha1 `c6114aee`,
    `hh_cat_gfx_v31.cct` `3a5efa25`, `hh_dynamic_downloader_v31.cct` `4b212ff9`) and the v31 wrapper as
    `gamedata/external_vars_web.php.v31-2026-11-17`. Rollback images: `kepler:v1.25.12-v31-2026-11-17`,
    `keplercms:v31-2026-11-17`.
@@ -77,7 +92,15 @@ Source: r31's `dcr/v31/` from Patrick's game file archive. With habbo-vibe-playg
 
 ```bash
 node out/cli/renameNames.js v31/hh_cat_new.cct /tmp/cn.cct activateWindowObj=activateWindow getSessionHash=getUniqueID setHeaderMemberName=setHeaderImage
-node out/cli/addScript.js /tmp/cn.cct compat.ls "Compat API" v31/fuse_client.cct "Variable API" hh_cat_new.cct
+node out/cli/addScript.js /tmp/cn.cct compat.ls "Compat API" v31/fuse_client.cct "Variable API" /tmp/cn1.cct
+node out/cli/addScript.js /tmp/cn1.cct strip_fix.ls "Product Strip Fix Class" /tmp/cn1.cct "Product Strip Default Class" /tmp/cn2.cct
+node out/cli/replaceText.js /tmp/cn2.cct /tmp/cn3.cct variable.index \
+  'layout.class.default.productstrip=["Product Strip Base Class", "Product Strip Default Class"]' \
+  'layout.class.default.productstrip=["Product Strip Base Class", "Product Strip Fix Class", "Product Strip Default Class"]'
+#   (the same for layout.class.cars.productstrip, before "Product Strip Combo Class")
+node out/cli/addScript.js /tmp/cn4.cct oldpage_fix.ls "Catalogpage Oldpage Fix Class" /tmp/cn4.cct "Catalogpage Oldpage Wrapper Class" /tmp/cn5.cct
+#   then for L in plasto spaces trophies pets recycler soundmachine purse: replaceText layout.class.$L=[... "Catalogpage
+#   Oldpage Wrapper Class"] to [... "Catalogpage Oldpage Wrapper Class", "Catalogpage Oldpage Fix Class"] -> hh_cat_new.cct
 node out/cli/renameNames.js v31/hh_dynamic_downloader.cct hh_dynamic_downloader_v31.cct getSessionHash=getUniqueID decodeUTF8=convertSpecialChars
 node out/cli/replaceText.js v31/hh_cat_gfx_all.cct /tmp/g1.cct ctlg_pets.window \
   '[#member: " ctlg_price_box", #media: #bitmap, #locH: 96, #locV: 302, #ink: 8, #blend: 100, #width: 159, #height: 34,' \
@@ -96,4 +119,7 @@ transparent; the coins are `hh_cat_code`'s `purse_coins_small`; the price box ha
 
 Tree with colours, icons and folders; default_3x3 pages; Plastic, spaces, Trax, pets, camera, gifts, trophies,
 exchange, Ecotron; buying (credits, hand, purchase log); the old catalogue against the same Odin (index without
-folders, pages, buying). A page-by-page screenshot comparison old vs v31 was started but not finished.
+folders, pages, buying). Page-by-page comparison old vs v31 (all 83 pages, local, with the r31 graphics fixes): no
+rendering breakage; it found the loading icons on Start pakker and Trax (fixed above). Patrick found the wallpaper
+picker broken on prod (shared sale codes, fixed above); after the fixes the picker pages through patterns and colours
+and buying a wallpaper gives the picked pattern (`1501` for pattern 15, model 1; purchase log: that catalogue item).

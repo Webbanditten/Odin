@@ -1,6 +1,7 @@
 package org.alexdev.kepler.messages.outgoing.catalogue;
 
 import org.alexdev.kepler.game.catalogue.CatalogueItem;
+import org.alexdev.kepler.game.catalogue.CatalogueManager;
 import org.alexdev.kepler.game.catalogue.CataloguePackage;
 import org.alexdev.kepler.game.catalogue.CataloguePage;
 import org.alexdev.kepler.game.item.base.ItemBehaviour;
@@ -56,7 +57,7 @@ public class CATALOGUE_PAGE_V31 extends MessageComposer {
 
         for (CatalogueItem item : this.items) {
             response.writeInt(item.getId());
-            response.writeString(item.getSaleCode());
+            response.writeString(CatalogueManager.getInstance().getV31OfferName(item));
             response.writeInt(item.getPrice());
             response.writeInt(0); // pixels: not used here (pixels.enabled is off)
 
