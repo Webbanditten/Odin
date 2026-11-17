@@ -59,6 +59,11 @@ public class GameConfigWriter implements ConfigWriter {
         config.put("snowstorm.ticket.charge", "2");
         config.put("snowstorm.increase.points", "true");
 
+        // Wobble Squabble highscores: points per hit that lands, and for knocking the opponent into the water.
+        config.put("wobblesquabble.increase.points", "true");
+        config.put("wobblesquabble.points.per.hit", "10");
+        config.put("wobblesquabble.points.win", "50");
+
         config.put("tutorial.enabled", "true");
         config.put("profile.editing", "true");
         config.put("vouchers.enabled", "true");

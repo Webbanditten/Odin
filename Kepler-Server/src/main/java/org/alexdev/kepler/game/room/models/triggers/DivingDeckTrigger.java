@@ -107,8 +107,12 @@ public class DivingDeckTrigger extends GenericTrigger {
 
         if (room.getTaskManager().hasTask("DivingCamera")) {
             PoolCamera task = (PoolCamera) room.getTaskManager().getTask("DivingCamera");
-            player.send(new SHOWPROGRAM(new String[]{"cam1", "targetcamera", String.valueOf(task.getPlayer().getRoomUser().getInstanceId())}));
-            player.send(new SHOWPROGRAM(new String[]{"cam1", "setcamera", String.valueOf(task.getCameraType())}));
+
+            // The camera may be between players (or the task just ended): then it picks someone on its next turn.
+            if (task != null && task.getPlayer() != null) {
+                player.send(new SHOWPROGRAM(new String[]{"cam1", "targetcamera", String.valueOf(task.getPlayer().getRoomUser().getInstanceId())}));
+                player.send(new SHOWPROGRAM(new String[]{"cam1", "setcamera", String.valueOf(task.getCameraType())}));
+            }
         } else {
             room.getTaskManager().scheduleTask("DivingCamera", new PoolCamera(room), 0, 10, TimeUnit.SECONDS);
         }
@@ -133,7 +137,9 @@ public class DivingDeckTrigger extends GenericTrigger {
 
         DivingDeckTrigger.PoolCamera task = (DivingDeckTrigger.PoolCamera) room.getTaskManager().getTask("DivingCamera");
 
-        if (task.getPlayer() == player) {
+        // No camera task (two players leaving at once): throwing here skipped the rest of leaveRoom, leaving the
+        // player as a ghost on their tile (e.g. a Wobble Squabble start tile) and the room undisposed.
+        if (task != null && task.getPlayer() == player) {
             task.spectateNewPlayer();
         }
     }
