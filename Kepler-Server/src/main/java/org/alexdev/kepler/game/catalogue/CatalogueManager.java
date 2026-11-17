@@ -26,6 +26,7 @@ public class CatalogueManager {
     private List<CatalogueItem> catalogueItemList;
     private List<CataloguePackage> cataloguePackageList;
     private java.util.Set<String> libraryImages;
+    private java.util.Set<String> sharedSaleCodes;
 
     public CatalogueManager() {
         this.cataloguePageList = CatalogueDao.getPages();
@@ -33,6 +34,25 @@ public class CatalogueManager {
         this.catalogueItemList = CatalogueDao.getItems();
         this.libraryImages = CatalogueDao.getLibraryImages();
         this.loadPackages();
+
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        this.sharedSaleCodes = new java.util.HashSet<>();
+
+        for (CatalogueItem item : this.catalogueItemList) {
+            if (!seen.add(item.getSaleCode())) {
+                this.sharedSaleCodes.add(item.getSaleCode());
+            }
+        }
+    }
+
+    /**
+     * The name of a catalogue item's offer in the v31 catalogue: its sale code, or "<sale code>_<item id>" when other
+     * items share that sale code (all wallpapers are "wallpaper", landscapes "landscape"). The client groups a page's
+     * offers by name (one group = one product in several currencies), so shared names would merge different products
+     * into one: the spaces page kept only its first wallpaper. The CMS's productdata names them the same way.
+     */
+    public String getV31OfferName(CatalogueItem item) {
+        return this.sharedSaleCodes.contains(item.getSaleCode()) ? item.getSaleCode() + "_" + item.getId() : item.getSaleCode();
     }
 
     /** Page images that come from the image library (see catalogue_library_images). */
