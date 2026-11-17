@@ -198,6 +198,33 @@ public class CatalogueManager {
     }
 
     /**
+     * The catalogue item a voucher gives for a sale code: a visible one if there is one, else a hidden one, so vouchers
+     * can hand out furni that isn't for sale (rares, prizes).
+     *
+     * @param saleCode the sale code from vouchers_items
+     * @return the item, or null if no catalogue item has that sale code
+     */
+    public CatalogueItem getVoucherItem(String saleCode) {
+        CatalogueItem hidden = null;
+
+        for (CatalogueItem catalogueItem : this.catalogueItemList) {
+            if (!catalogueItem.getSaleCode().equals(saleCode)) {
+                continue;
+            }
+
+            if (!catalogueItem.isHidden()) {
+                return catalogueItem;
+            }
+
+            if (hidden == null) {
+                hidden = catalogueItem;
+            }
+        }
+
+        return hidden;
+    }
+
+    /**
      * Get a list of items for the catalogue page.
      *
      * @param pageId the id of the page to get the items for

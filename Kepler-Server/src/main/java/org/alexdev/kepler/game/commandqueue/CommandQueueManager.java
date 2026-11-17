@@ -66,6 +66,9 @@ public class CommandQueueManager {
                 case RELOAD_NAVIGATOR:
                     command = new ReloadNavigatorCommand();
                     break;
+                case RELOAD_INVENTORY:
+                    command = new ReloadInventoryCommand();
+                    break;
                 default:
                     break;
             }
