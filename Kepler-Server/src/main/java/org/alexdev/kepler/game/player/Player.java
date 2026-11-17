@@ -248,12 +248,27 @@ public class Player extends Entity {
      */
     @Override
     public boolean hasFuse(Fuse fuse) {
+        // The room photographer gets into locked, password and full rooms like staff.
+        if ((fuse == Fuse.ENTER_LOCKED_ROOMS || fuse == Fuse.ENTER_FULL_ROOMS) && this.isPhotographer()) {
+            return true;
+        }
+
         for (Fuseright fuseright : this.getDetails().getFuseRights()) {
             if(fuseright.getFuse().equalsIgnoreCase(fuse.getFuseName())) {
                 return true;
             }
         }
         return false;
+    }
+
+    /**
+     * The room photographer account (setting room.photographer.username): the CMS's room-photographer service logs in
+     * as it to photograph rooms. It enters any room (see hasFuse) and other players never see it in a room: it is left
+     * out of the user lists, statuses and visitor counts they get (RoomEntityManager.seenBy).
+     */
+    public boolean isPhotographer() {
+        String photographer = GameConfiguration.getInstance().getString("room.photographer.username", "");
+        return photographer != null && !photographer.isBlank() && photographer.equalsIgnoreCase(this.getDetails().getName());
     }
 
     /**

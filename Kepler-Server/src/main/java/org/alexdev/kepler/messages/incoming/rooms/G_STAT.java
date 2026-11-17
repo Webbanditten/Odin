@@ -1,5 +1,6 @@
 package org.alexdev.kepler.messages.incoming.rooms;
 
+import org.alexdev.kepler.game.room.managers.RoomEntityManager;
 import org.alexdev.kepler.game.games.Game;
 import org.alexdev.kepler.game.item.Item;
 import org.alexdev.kepler.game.item.base.ItemBehaviour;
@@ -46,12 +47,16 @@ public class G_STAT implements MessageEvent {
             room.refreshRights(player);
         }
 
-        room.send(new USER_OBJECTS(player), List.of(player));
-        player.send(new USER_OBJECTS(room.getEntities()));
+        // The room photographer is never shown to others (RoomEntityManager.seenBy).
+        if (!player.isPhotographer()) {
+            room.send(new USER_OBJECTS(player), List.of(player));
+        }
+
+        player.send(new USER_OBJECTS(RoomEntityManager.seenBy(player, room.getEntities())));
 
         room.getEntityManager().tryRoomEntry(player);
 
-        player.send(new USER_STATUSES(room.getEntities()));
+        player.send(new USER_STATUSES(RoomEntityManager.seenBy(player, room.getEntities())));
         player.getRoomUser().setNeedsUpdate(true);
 
         for (Item item : room.getItems()) {
