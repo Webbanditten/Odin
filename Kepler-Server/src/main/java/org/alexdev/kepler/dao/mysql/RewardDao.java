@@ -59,6 +59,30 @@ public class RewardDao {
         return rewards;
     }
 
+    /**
+     * Whether a reward started within the last given seconds (by the database clock, like getAvailableRewards).
+     */
+    public static boolean hasRewardStartedWithin(int seconds) {
+        Connection sqlConnection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+
+        try {
+            sqlConnection = Storage.getStorage().getConnection();
+            preparedStatement = Storage.getStorage().prepare("SELECT 1 FROM rewards WHERE available_from > CURRENT_TIMESTAMP() - INTERVAL ? SECOND AND available_from <= CURRENT_TIMESTAMP() LIMIT 1", sqlConnection);
+            preparedStatement.setInt(1, seconds);
+            resultSet = preparedStatement.executeQuery();
+            return resultSet.next();
+        } catch (Exception e) {
+            Storage.logError(e);
+            return false;
+        } finally {
+            Storage.closeSilently(resultSet);
+            Storage.closeSilently(preparedStatement);
+            Storage.closeSilently(sqlConnection);
+        }
+    }
+
     public static void redeemReward(int id, int user_id) {
         Connection sqlConnection = null;
         PreparedStatement preparedStatement = null;
