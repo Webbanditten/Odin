@@ -19,6 +19,7 @@ import org.alexdev.kepler.game.inventory.Inventory;
 import org.alexdev.kepler.game.item.Item;
 import org.alexdev.kepler.game.item.ItemManager;
 import org.alexdev.kepler.game.item.base.ItemDefinition;
+import org.alexdev.kepler.game.reward.Reward;
 import org.alexdev.kepler.game.messenger.Messenger;
 import org.alexdev.kepler.game.room.entities.RoomPlayer;
 import org.alexdev.kepler.log.Log;
@@ -154,11 +155,20 @@ public class Player extends Entity {
             PlayerDao.incrementLoginStreak(this.details.getId());
         }
 
-        // Rewards
-        var rewards = RewardDao.getAvailableRewards(this.getDetails().getId());
-        rewards.forEach(reward -> {
-            List<ItemDefinition> itemDefinitions = new ArrayList<>();
-            if(reward.getBadge() != null && !reward.getBadge().isEmpty()) {
+        this.giveRewards();
+    }
+
+    /**
+     * Give the rewards that are available now and that this player hasn't got yet: the badge, and the furni as a
+     * present with the reward's note. Called at login, and by the GameScheduler when a reward starts while the player
+     * is online. Synchronized so the two can't hand the same reward out twice.
+     */
+    public synchronized void giveRewards() {
+        for (Reward reward : RewardDao.getAvailableRewards(this.details.getId())) {
+            boolean hasBadge = reward.getBadge() != null && !reward.getBadge().isEmpty();
+            boolean hasItems = reward.getItemDefinitions() != null && !reward.getItemDefinitions().isEmpty();
+
+            if (hasBadge) {
                 List<String> badges = this.getDetails().getBadges();
                 if (!badges.contains(reward.getBadge())) {
 
@@ -177,34 +187,34 @@ public class Player extends Entity {
                     this.send(new ALERT(reward.getDescription()));
                 }
             }
-            if(!reward.getItemDefinitions().isEmpty()) {
-                if (reward.getItemDefinitions().contains(",")) {
-                    for (String itemDefinition : reward.getItemDefinitions().split(",")) {
-                        itemDefinitions.add(ItemManager.getInstance().getDefinition(Integer.parseInt(itemDefinition)));
-                    }
-                } else {
-                    itemDefinitions.add(ItemManager.getInstance().getDefinition(Integer.parseInt(reward.getItemDefinitions())));
+
+            if (!hasItems) {
+                // A badge-only reward counts as received too (it was never marked, so the website showed it as missed).
+                if (hasBadge) {
+                    RewardDao.redeemReward(reward.getId(), this.details.getId());
                 }
+                continue;
             }
-            if(itemDefinitions.size() == StringUtils.countMatches(reward.getItemDefinitions(), ",") + 1) {
+
+            List<ItemDefinition> itemDefinitions = new ArrayList<>();
+            for (String itemDefinition : reward.getItemDefinitions().split(",")) {
+                itemDefinitions.add(ItemManager.getInstance().getDefinition(Integer.parseInt(itemDefinition.trim())));
+            }
+
+            if (itemDefinitions.size() == StringUtils.countMatches(reward.getItemDefinitions(), ",") + 1) {
                 try {
                     Item present = ItemManager.getInstance().createRewardGift(this.details, reward.getItemDefinitions(), StringUtil.filterInput(reward.getDescription(), false));
-                    if(present != null) {
+                    if (present != null) {
+                        this.getInventory().addItem(present);
+                        this.getInventory().getView("new");
 
-
-                        if (this != null) {
-                            this.getInventory().addItem(present);
-                            this.getInventory().getView("new");
-
-                            RewardDao.redeemReward(reward.getId(), this.details.getId());
-                        }
+                        RewardDao.redeemReward(reward.getId(), this.details.getId());
                     }
                 } catch (Exception e) {
                     Log.getErrorLogger().error("Error while creating reward gift", e);
                 }
             }
-           
-        });
+        }
     }
 
     /**

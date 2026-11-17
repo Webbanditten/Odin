@@ -2,6 +2,7 @@ package org.alexdev.kepler.game;
 
 import org.alexdev.kepler.dao.mysql.CurrencyDao;
 import org.alexdev.kepler.dao.mysql.PurseDao;
+import org.alexdev.kepler.dao.mysql.RewardDao;
 import org.alexdev.kepler.game.catalogue.RareManager;
 import org.alexdev.kepler.game.commandqueue.CommandQueueManager;
 import org.alexdev.kepler.game.events.EventsManager;
@@ -137,6 +138,14 @@ public class GameScheduler implements Runnable {
             // Save chat messages every 60 seconds
             if (this.tickRate.get() % 60 == 0) {
                 ChatManager.getInstance().performChatSaving();
+            }
+
+            // A reward started: give it to the players who are online (otherwise they only got it at their next login).
+            // The window overlaps the minute so a late tick misses nothing; giveRewards skips what a player already got.
+            if (this.tickRate.get() % 60 == 0 && RewardDao.hasRewardStartedWithin(120)) {
+                for (Player player : PlayerManager.getInstance().getPlayers()) {
+                    player.giveRewards();
+                }
             }
 
         } catch (Exception ex) {
