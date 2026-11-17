@@ -68,6 +68,10 @@ public class GameConfigWriter implements ConfigWriter {
         config.put("profile.editing", "true");
         config.put("vouchers.enabled", "true");
 
+        // The room photographer (the CMS's room-photographer service logs in as this account to take room photos): it
+        // enters any room and other players never see it. Empty = no photographer.
+        config.put("room.photographer.username", "");
+
         config.put("shutdown.minutes", "1");
 
         config.put("reset.sso.after.login", "true");

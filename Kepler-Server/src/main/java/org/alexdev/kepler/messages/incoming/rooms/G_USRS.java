@@ -1,5 +1,6 @@
 package org.alexdev.kepler.messages.incoming.rooms;
 
+import org.alexdev.kepler.game.room.managers.RoomEntityManager;
 import org.alexdev.kepler.dao.mysql.GroupDao;
 import org.alexdev.kepler.game.entity.Entity;
 import org.alexdev.kepler.game.entity.EntityType;
@@ -29,12 +30,12 @@ public class G_USRS implements MessageEvent {
         }
 
         Room room = player.getRoomUser().getRoom();
-        player.send(new USER_OBJECTS(room.getEntities()));
+        player.send(new USER_OBJECTS(RoomEntityManager.seenBy(player, room.getEntities())));
 
         List<Integer> groupIds = new ArrayList<>();
         List<Group> groups = new ArrayList<>();
 
-        for (Entity entity : room.getEntities()) {
+        for (Entity entity : RoomEntityManager.seenBy(player, room.getEntities())) {
             if(entity.getType() == EntityType.PLAYER) {
                 player.send(new USER_TAGS(entity.getDetails()));
                 if(entity.getDetails().getGroup() > 0) {

@@ -1,5 +1,6 @@
 package org.alexdev.kepler.game.room.tasks;
 
+import org.alexdev.kepler.game.room.managers.RoomEntityManager;
 import org.alexdev.kepler.game.entity.Entity;
 import org.alexdev.kepler.game.entity.EntityType;
 import org.alexdev.kepler.game.pathfinder.Position;
@@ -67,6 +68,9 @@ public class EntityTask implements Runnable {
                     }
                 }
             }
+
+            // The room photographer stands still, invisible to others (RoomEntityManager.seenBy).
+            entitiesToUpdate.removeIf(RoomEntityManager::isPhotographer);
 
             if (entitiesToUpdate.size() > 0) {
                 this.room.send(new USER_STATUSES(entitiesToUpdate));

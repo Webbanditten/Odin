@@ -1,5 +1,7 @@
 package org.alexdev.kepler.game.room.managers;
 
+import java.util.stream.Collectors;
+import java.util.Collection;
 import org.alexdev.kepler.dao.mysql.ItemDao;
 import org.alexdev.kepler.dao.mysql.RoomDao;
 import org.alexdev.kepler.dao.mysql.RoomRightsDao;
@@ -86,6 +88,28 @@ public class RoomEntityManager {
         return getEntitiesByClass(Player.class);
     }
 
+    /** Whether this entity is the room photographer (Player.isPhotographer), whom other players never see. */
+    public static boolean isPhotographer(Entity entity) {
+        return entity instanceof Player && ((Player) entity).isPhotographer();
+    }
+
+    /**
+     * The entities a player may see: everyone for the room photographer itself, everyone but the photographer for
+     * other players.
+     */
+    public static List<Entity> seenBy(Player viewer, Collection<Entity> entities) {
+        if (viewer.isPhotographer()) {
+            return new ArrayList<>(entities);
+        }
+
+        return entities.stream().filter(entity -> !isPhotographer(entity)).collect(Collectors.toList());
+    }
+
+    /** Players in the room as the navigator counts them (not the room photographer). */
+    private int visitorCount() {
+        return (int) this.getPlayers().stream().filter(player -> !player.isPhotographer()).count();
+    }
+
     /**
      * Get an entity by instance id.
      *
@@ -162,7 +186,7 @@ public class RoomEntityManager {
         }
 
         this.room.getEntities().add(entity);
-        this.room.getData().setVisitorsNow(this.room.getEntityManager().getPlayers().size());
+        this.room.getData().setVisitorsNow(this.visitorCount());
 
 
 
@@ -333,8 +357,10 @@ public class RoomEntityManager {
         }
 
         // From this point onwards we send packets for the user to leave
-        this.room.getData().setVisitorsNow(this.room.getEntityManager().getPlayers().size());
-        this.room.send(new LOGOUT(entity.getRoomUser().getInstanceId()));
+        this.room.getData().setVisitorsNow(this.visitorCount());
+        if (!isPhotographer(entity)) {
+            this.room.send(new LOGOUT(entity.getRoomUser().getInstanceId()));
+        }
         this.room.tryDispose();
 
         entity.getRoomUser().reset();
