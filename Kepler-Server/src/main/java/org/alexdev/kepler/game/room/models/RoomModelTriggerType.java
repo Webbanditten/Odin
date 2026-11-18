@@ -13,6 +13,7 @@ public enum RoomModelTriggerType {
     DIVING_DECK_TRIGGER(new DivingDeckTrigger()),
     INFOBUS_PARK(new InfobusParkTrigger()),
     INFOBUS_POLL(new InfobusPollTrigger()),
+    ROOM_PROGRAM_TRIGGER(new RoomProgramTrigger()),
     NONE(null);
 
     private GenericTrigger roomTrigger;
