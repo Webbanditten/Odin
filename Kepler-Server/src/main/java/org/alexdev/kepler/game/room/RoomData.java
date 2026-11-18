@@ -31,6 +31,8 @@ public class RoomData {
     private String password;
     private int visitorsNow;
     private int visitorsMax;
+    private int queueMax;
+    private int spectatorsMax;
     private int rating;
     private Game game;
     private int groupId;
@@ -268,6 +270,24 @@ public class RoomData {
 
     public void setVisitorsMax(int visitorsMax) {
         this.visitorsMax = visitorsMax;
+    }
+
+    /** How many may wait in this room's queue when it's full (rooms.queue_max; 0 = no queue). */
+    public int getQueueMax() {
+        return queueMax;
+    }
+
+    public void setQueueMax(int queueMax) {
+        this.queueMax = Math.max(0, queueMax);
+    }
+
+    /** Spectator seats (rooms.spectators_max; 0 = no spectator mode). */
+    public int getSpectatorsMax() {
+        return spectatorsMax;
+    }
+
+    public void setSpectatorsMax(int spectatorsMax) {
+        this.spectatorsMax = Math.max(0, spectatorsMax);
     }
 
     public int getRating(){

@@ -1,5 +1,6 @@
 package org.alexdev.kepler.game;
 
+import org.alexdev.kepler.game.room.managers.RoomQueueManager;
 import org.alexdev.kepler.dao.mysql.CurrencyDao;
 import org.alexdev.kepler.dao.mysql.PurseDao;
 import org.alexdev.kepler.dao.mysql.RewardDao;
@@ -109,6 +110,11 @@ public class GameScheduler implements Runnable {
                         p.send(new CREDIT_BALANCE(p.getDetails()));
                     }
                 }
+            }
+
+            // Room queues and spectator seats: let people in when there's room (RoomQueueManager)
+            if (this.tickRate.get() % 2 == 0) {
+                RoomQueueManager.processAll();
             }
 
             // Purge expired rows

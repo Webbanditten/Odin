@@ -430,5 +430,8 @@ public class RoomDao {
                 row.getBoolean("superusers"), row.getInt("accesstype"), row.getString("password"),
                 row.getInt("visitors_now"), row.getInt("visitors_max"), row.getInt("rating"), row.getBoolean("is_hidden"));
 
+        data.setQueueMax(row.getInt("queue_max"));
+        data.setSpectatorsMax(row.getInt("spectators_max"));
+
     }
 }

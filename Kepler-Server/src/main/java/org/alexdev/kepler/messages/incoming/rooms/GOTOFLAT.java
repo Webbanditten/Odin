@@ -1,5 +1,6 @@
 package org.alexdev.kepler.messages.incoming.rooms;
 
+import org.alexdev.kepler.game.room.managers.RoomQueueManager;
 import org.alexdev.kepler.game.player.Player;
 import org.alexdev.kepler.game.room.Room;
 import org.alexdev.kepler.game.room.RoomManager;
@@ -21,6 +22,7 @@ public class GOTOFLAT implements MessageEvent {
             return;
         }
 
-        room.getEntityManager().enterRoom(player, null);
+        // In, or (when it's full) its queue, a spectator seat or "Rummet er fyldt."; the owner always gets in.
+        RoomQueueManager.enter(room, player);
     }
 }

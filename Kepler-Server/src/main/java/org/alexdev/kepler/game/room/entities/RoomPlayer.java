@@ -37,6 +37,9 @@ public class RoomPlayer extends RoomEntity {
     private GamePlayer gamePlayer;
     private String currentGameId;
 
+    // Room spectator (RoomQueueManager): watches the room on the client's TV screen, without an avatar. 0 = not one.
+    private long spectatingSince;
+
     private int chatSpamCount = 0;
     private int chatSpamTicks = 16;
     private long muteTime;
@@ -91,7 +94,27 @@ public class RoomPlayer extends RoomEntity {
         this.isDiving = false;
         this.observingGameId = -1;
         this.lidoVote = 0;
+        this.spectatingSince = 0;
         RoomTradeManager.close(this);
+    }
+
+    /**
+     * Whether the player watches this room as a spectator (room queue / spectator seats, see RoomQueueManager). Not the
+     * same as a game spectator (GamePlayer.isSpectator). Spectators are in the room's entity list so they get everything
+     * that happens in it, but no one sees them (RoomEntityManager.seenBy), they don't count as visitors and they can't
+     * act (MessageHandler).
+     */
+    public boolean isSpectator() {
+        return this.spectatingSince > 0;
+    }
+
+    /** When the player started watching (seconds), or 0. */
+    public long getSpectatingSince() {
+        return this.spectatingSince;
+    }
+
+    public void setSpectatingSince(long spectatingSince) {
+        this.spectatingSince = spectatingSince;
     }
 
     /*

@@ -69,8 +69,8 @@ public class EntityTask implements Runnable {
                 }
             }
 
-            // The room photographer stands still, invisible to others (RoomEntityManager.seenBy).
-            entitiesToUpdate.removeIf(RoomEntityManager::isPhotographer);
+            // The room photographer and spectators are invisible to others (RoomEntityManager.seenBy).
+            entitiesToUpdate.removeIf(RoomEntityManager::isHidden);
 
             if (entitiesToUpdate.size() > 0) {
                 this.room.send(new USER_STATUSES(entitiesToUpdate));

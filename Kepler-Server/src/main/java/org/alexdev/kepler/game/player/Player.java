@@ -21,7 +21,9 @@ import org.alexdev.kepler.game.item.ItemManager;
 import org.alexdev.kepler.game.item.base.ItemDefinition;
 import org.alexdev.kepler.game.reward.Reward;
 import org.alexdev.kepler.game.messenger.Messenger;
+import org.alexdev.kepler.game.room.Room;
 import org.alexdev.kepler.game.room.entities.RoomPlayer;
+import org.alexdev.kepler.game.room.managers.RoomQueueManager;
 import org.alexdev.kepler.log.Log;
 import org.alexdev.kepler.messages.outgoing.club.CLUB_GIFT;
 import org.alexdev.kepler.messages.outgoing.handshake.AVAILABLE_SETS;
@@ -54,6 +56,9 @@ public class Player extends Entity {
     private final NettyPlayerNetwork network;
     private final PlayerDetails details;
     private final RoomPlayer roomEntity;
+
+    // The room whose queue this player waits in (RoomQueueManager), or null.
+    private volatile Room queuedRoom;
 
     private Set<String> ignoredList;
 
@@ -411,6 +416,8 @@ public class Player extends Entity {
     public void dispose() {
         try {
             if (this.loggedIn) {
+                RoomQueueManager.leaveQueue(this);
+
                 if (this.roomEntity.getRoom() != null) {
                     this.roomEntity.getRoom().getEntityManager().leaveRoom(this, false);
                 }
@@ -431,6 +438,15 @@ public class Player extends Entity {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+    }
+
+    /** The room whose queue this player waits in, or null (RoomQueueManager). */
+    public Room getQueuedRoom() {
+        return this.queuedRoom;
+    }
+
+    public void setQueuedRoom(Room queuedRoom) {
+        this.queuedRoom = queuedRoom;
     }
 
     public Set<String> getIgnoredList() {

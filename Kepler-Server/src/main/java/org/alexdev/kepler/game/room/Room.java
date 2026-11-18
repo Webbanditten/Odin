@@ -1,5 +1,6 @@
 package org.alexdev.kepler.game.room;
 
+import org.alexdev.kepler.game.room.managers.RoomQueueManager;
 import org.alexdev.kepler.dao.mysql.PetDao;
 import org.alexdev.kepler.dao.mysql.RoomDao;
 import org.alexdev.kepler.dao.mysql.RoomVoteDao;
@@ -40,6 +41,7 @@ public class Room {
     private RoomEntityManager roomEntityManager;
     private RoomItemManager roomItemManager;
     private RoomTaskManager roomTaskManager;
+    private RoomQueueManager roomQueueManager;
     private FutureRunnable disposeRunnable;
 
     private boolean isActive;
@@ -56,6 +58,7 @@ public class Room {
         this.roomEntityManager = new RoomEntityManager(this);
         this.roomItemManager = new RoomItemManager(this);
         this.roomTaskManager = new RoomTaskManager(this);
+        this.roomQueueManager = new RoomQueueManager(this);
         this.roomMapping = new RoomMapping(this);
         this.entities = new CopyOnWriteArrayList<>();
         this.items = new CopyOnWriteArrayList<>();
@@ -308,6 +311,15 @@ public class Room {
      */
     public RoomItemManager getItemManager() {
         return this.roomItemManager;
+    }
+
+    /**
+     * Get the queue and spectator seats of this room (used when it's full).
+     *
+     * @return the queue manager
+     */
+    public RoomQueueManager getQueueManager() {
+        return this.roomQueueManager;
     }
 
     /**

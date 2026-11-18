@@ -1,5 +1,6 @@
 package org.alexdev.kepler.game.room.mapping;
 
+import org.alexdev.kepler.game.room.managers.RoomEntityManager;
 import org.alexdev.kepler.game.player.Player;
 import org.alexdev.kepler.game.entity.Entity;
 import org.alexdev.kepler.game.item.Item;
@@ -106,8 +107,8 @@ public class RoomMapping {
             for (Entity entity : this.room.getEntities()) {
                 RoomTile tile = entity.getRoomUser().getTile();
 
-                if (tile == null) {
-                    continue;
+                if (tile == null || RoomEntityManager.isHidden(entity)) {
+                    continue; // spectators and the photographer have no avatar, so they stand nowhere
                 }
 
                 tile.addEntity(entity);

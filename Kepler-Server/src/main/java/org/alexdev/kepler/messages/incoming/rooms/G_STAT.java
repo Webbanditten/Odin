@@ -42,6 +42,13 @@ public class G_STAT implements MessageEvent {
 
         Room room = player.getRoomUser().getRoom();
 
+        // A room spectator (RoomQueueManager): the client shows the room on its TV screen, without an own avatar.
+        if (player.getRoomUser().isSpectator()) {
+            player.send(new YOUARESPECTATOR());
+            player.send(new USER_STATUSES(RoomEntityManager.seenBy(player, room.getEntities())));
+            return;
+        }
+
         // Only refresh rights when in private room
         if (!room.isPublicRoom()) {
             room.refreshRights(player);
