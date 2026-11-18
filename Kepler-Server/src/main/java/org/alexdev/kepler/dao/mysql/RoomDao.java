@@ -63,6 +63,54 @@ public class RoomDao {
         return rooms;
     }
 
+    /**
+     * Rooms by id, in the order of the ids (ids without a room are left out).
+     */
+    public static List<Room> getRoomsByIds(List<Integer> ids) {
+        List<Room> rooms = new ArrayList<>();
+
+        if (ids.isEmpty()) {
+            return rooms;
+        }
+
+        Connection sqlConnection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+
+        try {
+            sqlConnection = Storage.getStorage().getConnection();
+            preparedStatement = Storage.getStorage().prepare("SELECT * FROM rooms LEFT JOIN users ON rooms.owner_id = users.id WHERE rooms.id IN (" +
+                    String.join(",", java.util.Collections.nCopies(ids.size(), "?")) + ")", sqlConnection);
+
+            for (int i = 0; i < ids.size(); i++) {
+                preparedStatement.setInt(i + 1, ids.get(i));
+            }
+
+            resultSet = preparedStatement.executeQuery();
+            java.util.Map<Integer, Room> byId = new java.util.HashMap<>();
+
+            while (resultSet.next()) {
+                Room room = new Room();
+                fill(room.getData(), resultSet);
+                byId.put(room.getId(), room);
+            }
+
+            for (int id : ids) {
+                if (byId.containsKey(id)) {
+                    rooms.add(byId.get(id));
+                }
+            }
+        } catch (Exception e) {
+            Storage.logError(e);
+        } finally {
+            Storage.closeSilently(resultSet);
+            Storage.closeSilently(preparedStatement);
+            Storage.closeSilently(sqlConnection);
+        }
+
+        return rooms;
+    }
+
     public static void saveChatLog(List<ChatMessage> chatMessageList) {
         Connection sqlConnection = null;
         PreparedStatement preparedStatement = null;

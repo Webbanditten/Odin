@@ -3,7 +3,6 @@ package org.alexdev.kepler.game.room;
 import org.alexdev.kepler.dao.Storage;
 import org.alexdev.kepler.dao.mysql.RoomDao;
 import org.alexdev.kepler.dao.mysql.RoomFavouritesDao;
-import org.alexdev.kepler.dao.mysql.RoomVoteDao;
 import org.alexdev.kepler.util.config.GameConfiguration;
 import org.alexdev.kepler.game.room.handlers.walkways.WalkwaysEntrance;
 import org.alexdev.kepler.game.room.handlers.walkways.WalkwaysManager;
@@ -126,39 +125,6 @@ public class RoomManager {
         }
 
         return rooms;
-    }
-
-    /**
-     * Performs a santiy check and recounts the given room, to make sure
-     * that have had their votes expired and is recounted properly.
-     *
-     * @param roomList the list of rooms to do the santiy check for
-     */
-    public void ratingSantiyCheck(List<Room> roomList) {
-        for (Room room : roomList) {
-            if (room.isPublicRoom()) {
-                continue;
-            }
-
-            if (room.getData().getVisitorsNow() > 0) {
-                continue;
-            }
-
-            if (!(room.getData().getRating() > 0)) {
-                return;
-            }
-
-            RoomVoteDao.removeExpiredVotes(room.getId());
-            int newRating = RoomVoteDao.getRatings(room.getId()).values().stream().mapToInt(Integer::intValue).sum();
-
-            if (newRating < 0) {
-                newRating = 0;
-            }
-
-            if (newRating != room.getData().getRating()) {
-                RoomDao.saveRating(room.getId(), newRating);
-            }
-        }
     }
 
     /**
