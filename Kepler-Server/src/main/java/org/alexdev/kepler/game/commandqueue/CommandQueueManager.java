@@ -72,6 +72,9 @@ public class CommandQueueManager {
                 case RELOAD_SETTINGS:
                     command = new ReloadSettingsCommand();
                     break;
+                case RELOAD_ADS:
+                    command = new ReloadAdsCommand();
+                    break;
                 default:
                     break;
             }

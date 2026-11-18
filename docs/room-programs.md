@@ -21,6 +21,7 @@ lamps) and the Lido its pool programs (splashes, the lift door, the big screen).
 | Det orange Rum (`bar_b`) | `lamp setlamp <n>` | 1–5 | The floor lamp's colours. |
 | Space Cafe (`space_cafe`) | `flipflop<0-7> visible <0/1>`, `lmpa ufol <n>`, `liga litecol <n>` (and b, c) | | The flip board and the three lamps; Odin runs these. |
 | Habbo Poolen (`pool_a`, `pool_b`) | `cam1 showtext <text>`, `cam1 setcamera <n>`, `cam1 targetcamera <id>`, `Splash0 …`, `door open/close` | | The big screen (lines split on `/`), splashes and the lift door; Odin sends these from the pool code. |
+| Habbo Poolen II, Tagterassen (`pool_b`, `md_a`) | `cam1 ad <picture URL>` | | A pool screen ad (Housekeeping > Ads) for 12 seconds, every `ads.pool.every`-th camera turn. Needs the rooms' `hh_room_pool_ads` / `hh_room_terrace_ads` casts ("Pool screen Class" downloads the picture; the original screen only shows cast members). |
 
 Every other public room animates by itself or has nothing the server changes.
 

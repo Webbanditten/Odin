@@ -24,7 +24,9 @@ public class CREDIT_LOG extends MessageComposer {
             Date date = new Date(log.getTimestamp()*1000);
             String dateStr = new SimpleDateFormat("dd/MM/yyyy").format(date);
             String timeStr = new SimpleDateFormat("HH:mm:ss").format(date);
-            logString.append(dateStr + "\t" + timeStr + "\t" + log.getCredits() + "\t0\t\t" +  log.getType() + "\r");
+            // The 4th item is the purse's "BELØB" column (real money paid), shown only with purse.valuefield.active=1
+            // (the purse layout that has room for a purse ad, Housekeeping > Ads); Odin has no such amount, so it's empty.
+            logString.append(dateStr + "\t" + timeStr + "\t" + log.getCredits() + "\t\t\t" +  log.getType() + "\r");
         });
         response.writeString(logString);
     }

@@ -16,8 +16,10 @@ public class ROOMAD extends MessageComposer {
     }
     @Override
     public void compose(NettyResponse response) {
-        if(this.img != null && this.url != null) {
-            response.writeString(this.img+"\t"+this.url+"\r");
+        // The client reads the body as "<picture URL><TAB><click URL>" (items of the whole message), so no string
+        // terminator; anything of one character or less means "no ad".
+        if (this.img != null) {
+            response.write(this.img + "\t" + (this.url != null ? this.url : ""));
         } else {
             response.writeInt(0);
         }

@@ -60,6 +60,9 @@ public class Player extends Entity {
     // The room whose queue this player waits in (RoomQueueManager), or null.
     private volatile Room queuedRoom;
 
+    // Room entries this visit, for the room loading ad (GETINTEREST, ads.loading.every).
+    private int roomEntriesForAds;
+
     private Set<String> ignoredList;
 
     private Logger log;
@@ -273,6 +276,11 @@ public class Player extends Entity {
      * as it to photograph rooms. It enters any room (see hasFuse) and other players never see it in a room: it is left
      * out of the user lists, statuses and visitor counts they get (RoomEntityManager.seenBy).
      */
+    /** Counts a room entry for the room loading ad and returns the count (1 on the first entry). */
+    public synchronized int countRoomEntryForAds() {
+        return ++this.roomEntriesForAds;
+    }
+
     public boolean isPhotographer() {
         String photographer = GameConfiguration.getInstance().getString("room.photographer.username", "");
         return photographer != null && !photographer.isBlank() && photographer.equalsIgnoreCase(this.getDetails().getName());
