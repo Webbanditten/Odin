@@ -17,7 +17,7 @@ public class GETUSERFLATCATS implements MessageEvent {
         List<NavigatorCategory> categoryList = new ArrayList<>();
 
         for (NavigatorCategory category : NavigatorManager.getInstance().getCategories().values()) {
-            if (category.isPublicSpaces()) {
+            if (category.isPublicSpaces() || category.isHidden() || category.isRanking()) {
                 continue;
             }
 

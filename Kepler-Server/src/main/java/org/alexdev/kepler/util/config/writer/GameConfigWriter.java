@@ -82,6 +82,8 @@ public class GameConfigWriter implements ConfigWriter {
         // Public rooms in the navigator: busiest first, in the order set in Housekeeping > Public rooms between rooms with
         // as many visitors (false = always in that order).
         config.put("navigator.public.busiest.first", "true");
+        // Guest room categories (Housekeeping > Room categories) likewise; the best rated lists always come first.
+        config.put("navigator.private.busiest.first", "true");
         // Room votes (RoomRatings): a player may vote on the same room again this many days after their last vote on it.
         config.put("room.rating.vote.days", "7");
 

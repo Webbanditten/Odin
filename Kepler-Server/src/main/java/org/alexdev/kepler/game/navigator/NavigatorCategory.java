@@ -15,9 +15,11 @@ public class NavigatorCategory {
     private boolean isNode;
     private int orderId;
     private String ranking;
+    private boolean hidden;
 
-    public NavigatorCategory(int id, int parentId, String name, boolean publicSpaces, boolean allowTrading, String fuseAccess, String fuseSetFlat, boolean isNode, int orderId, String ranking) {
+    public NavigatorCategory(int id, int parentId, String name, boolean publicSpaces, boolean allowTrading, String fuseAccess, String fuseSetFlat, boolean isNode, int orderId, String ranking, boolean hidden) {
         this.id = id;
+        this.hidden = hidden;
         this.orderId = orderId;
         this.ranking = ranking == null ? "" : ranking.trim();
         this.parentId = parentId;
@@ -33,6 +35,14 @@ public class NavigatorCategory {
      * A ranking category (rooms_categories.ranking = daily, weekly or alltime) lists the best rated guest rooms instead of
      * the rooms in it (RoomRatings); no room can be put in it.
      */
+    /**
+     * Hidden in Housekeeping (rooms_categories.is_hidden): the navigator doesn't list or open it, and players can't put a
+     * room in it. Its rooms keep their category.
+     */
+    public boolean isHidden() {
+        return hidden;
+    }
+
     public boolean isRanking() {
         return !this.ranking.isEmpty();
     }

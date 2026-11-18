@@ -40,7 +40,8 @@ public class NavigatorDao {
                         row.getString("fuse_setflatcat"),
                         row.getBoolean("isnode"),
                         row.getInt("order_id"),
-                        row.getString("ranking")
+                        row.getString("ranking"),
+                        row.getBoolean("is_hidden")
                 );
 
                 categories.put(category.getId(), category);

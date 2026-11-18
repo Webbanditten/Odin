@@ -19,7 +19,7 @@ public class SETFLATCAT implements MessageEvent {
 
         NavigatorCategory category = NavigatorManager.getInstance().getCategoryById(categoryId);
 
-        if (category == null) {
+        if (category == null || category.isHidden()) {
             return;
         }
 
