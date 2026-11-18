@@ -62,7 +62,9 @@ public class NAVNODEINFO extends MessageComposer {
                 response.writeString(room.getData().getName());
                 response.writeInt(room.getData().getTotalVisitorsNow());
                 response.writeInt(room.getData().getTotalVisitorsMax());
-                response.writeInt(room.getData().getCategoryId());
+                // The parent is the category listed: the client keeps only nodes whose parent is the category it asked for,
+                // and a forwarded room whose own category doesn't exist or is hidden is listed in the public root (NAVIGATE).
+                response.writeInt(this.parentCategory.getId());
                 response.writeString(description);
                 response.writeInt(room.getId());
                 response.writeInt(door);
