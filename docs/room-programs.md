@@ -6,7 +6,7 @@ first three words, so a value can't contain spaces. The room's client script (`<
 receives it as `showprogram`.
 
 Odin drives these rooms by itself (`RoomProgramTrigger` + `RoomProgramTask`, in `game/room/programs/`). The first
-visitor starts the room's show, it changes every `room.programs.seconds` (setting, default 45; `0` = never by itself),
+visitor starts the room's show, it changes every `room.programs.seconds` (setting, default 20 — visits to public rooms are short, so something should happen; `0` = never by itself),
 and everyone who walks in gets the current state at once. The Space Cafe has its own task (`SpaceCafeTask`, boards and
 lamps) and the Lido its pool programs (splashes, the lift door, the big screen).
 
