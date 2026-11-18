@@ -433,8 +433,9 @@ public class Room {
             return false;
         }
 
-        // 8 is Club Only category (TODO: create a club_only column in room categories table)
-        if (this.getCategory().getId() == 8) {
+        // 8 is Club Only category (TODO: create a club_only column in room categories table). A room whose category
+        // doesn't exist (Space Cafe's 6, the walkway rooms' 7) isn't club only; this threw on entry before.
+        if (this.getCategory() != null && this.getCategory().getId() == 8) {
             return true;
         }
 

@@ -12,15 +12,16 @@ import java.util.concurrent.TimeUnit;
 public class SpaceCafeTrigger extends GenericTrigger {
     @Override
     public void onRoomEntry(Entity entity, Room room, boolean firstEntry, Object... customArgs) {
-        if (!firstEntry) {
-            return;
-        }
-
         if (entity.getType() != EntityType.PLAYER) {
             return;
         }
 
-        room.getTaskManager().scheduleTask("SpaceCafeTask", new SpaceCafeTask(room), 0, 500, TimeUnit.MILLISECONDS);
+        if (!room.getTaskManager().hasTask("SpaceCafeTask")) {
+            room.getTaskManager().scheduleTask("SpaceCafeTask", new SpaceCafeTask(room), 0, 500, TimeUnit.MILLISECONDS);
+        }
+
+        // Someone who walks in later sees the boards and lamps as everyone else does.
+        RoomProgramTrigger.sendCurrentShows((Player) entity, room);
     }
 
     @Override

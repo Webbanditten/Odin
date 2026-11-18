@@ -72,7 +72,9 @@ public class SPLASH_POSITION implements MessageEvent {
                 finalScore = StringUtil.format((double) sum / total);
             }
 
-            room.send(new SHOWPROGRAM(new String[]{"cam1", "showtext", (player.getDetails().getName() + "'s\n score: " + finalScore)}));
+            // One word (the client keeps only the third word of a SHOWPROGRAM), lines split on "/" by the FUSE screen:
+            // the name, "POINT:" (the hotel's score_board.text) and the score. It showed only "<name>'s" before.
+            room.send(new SHOWPROGRAM(new String[]{"cam1", "showtext", player.getDetails().getName().replace(" ", "") + "/POINT:/" + finalScore}));
 
             for (Player p : room.getEntityManager().getPlayers()) {
                 p.getRoomUser().setLidoVote(0);
