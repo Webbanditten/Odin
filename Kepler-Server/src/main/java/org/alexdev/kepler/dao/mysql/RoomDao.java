@@ -432,6 +432,7 @@ public class RoomDao {
 
         data.setQueueMax(row.getInt("queue_max"));
         data.setSpectatorsMax(row.getInt("spectators_max"));
+        data.setNavigatorOrder(row.getInt("navigator_order"));
 
     }
 }

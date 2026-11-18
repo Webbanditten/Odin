@@ -79,6 +79,9 @@ public class GameConfigWriter implements ConfigWriter {
         config.put("room.bots.enabled", "true");
 
         config.put("navigator.show.hidden.rooms", "false");
+        // Public rooms in the navigator: busiest first, in the order set in Housekeeping > Public rooms between rooms with
+        // as many visitors (false = always in that order).
+        config.put("navigator.public.busiest.first", "true");
 
         config.put("rare.cycle.page.text", "Okay this thing is fucking epic!<br><br>The time until the next rare is {rareCountdown}!");
         config.put("rare.cycle.tick.time", "0");

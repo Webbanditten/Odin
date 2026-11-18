@@ -22,6 +22,10 @@ public class ReloadNavigatorCommand implements Command {
                 room.getData().setName(fresh.getData().getName());
                 room.getData().setDescription(fresh.getData().getDescription());
                 room.getData().setCcts(fresh.getData().getCcts());
+                // Housekeeping > Public rooms: category, place in it and whether the navigator shows it.
+                room.getData().setCategoryId(fresh.getData().getCategoryId());
+                room.getData().setNavigatorOrder(fresh.getData().getNavigatorOrder());
+                room.getData().setHidden(fresh.getData().isHidden());
             }
         }
 

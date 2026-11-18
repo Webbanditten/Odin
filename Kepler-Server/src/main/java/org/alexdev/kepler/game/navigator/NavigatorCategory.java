@@ -12,9 +12,11 @@ public class NavigatorCategory {
     private String fuseAccess;
     private String fuseSetFlat;
     private boolean isNode;
+    private int orderId;
 
-    public NavigatorCategory(int id, int parentId, String name, boolean publicSpaces, boolean allowTrading, String fuseAccess, String fuseSetFlat, boolean isNode) {
+    public NavigatorCategory(int id, int parentId, String name, boolean publicSpaces, boolean allowTrading, String fuseAccess, String fuseSetFlat, boolean isNode, int orderId) {
         this.id = id;
+        this.orderId = orderId;
         this.parentId = parentId;
         this.name = name;
         this.publicSpaces = publicSpaces;
@@ -50,6 +52,13 @@ public class NavigatorCategory {
 
     public int getId() {
         return id;
+    }
+
+    /**
+     * The category's place among its siblings (rooms_categories.order_id), set in Housekeeping > Public rooms.
+     */
+    public int getOrderId() {
+        return orderId;
     }
 
     public int getParentId() {
