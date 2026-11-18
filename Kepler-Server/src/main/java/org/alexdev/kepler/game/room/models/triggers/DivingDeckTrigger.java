@@ -71,7 +71,7 @@ public class DivingDeckTrigger extends GenericTrigger {
                 return false;
             }
 
-            Advertisement ad = AdManager.getInstance().pick(AdManager.POOL_SCREEN);
+            Advertisement ad = AdManager.getInstance().pick(AdManager.POOL_SCREEN, this.room.getId());
 
             if (ad == null) {
                 return false;

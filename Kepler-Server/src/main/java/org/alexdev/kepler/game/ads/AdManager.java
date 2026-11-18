@@ -80,8 +80,24 @@ public class AdManager {
                 .collect(Collectors.toList()));
     }
 
+    /** An ad of the placement without a room limit. */
     public Advertisement pick(String placement) {
-        return pick(this.ads.stream().filter(ad -> ad.getPlacement().equals(placement)).collect(Collectors.toList()));
+        return pick(this.ads.stream().filter(ad -> ad.getPlacement().equals(placement) && ad.getRooms().isEmpty()).collect(Collectors.toList()));
+    }
+
+    /** An ad of the placement for the room: one without a room limit or one limited to rooms that include it. */
+    public Advertisement pick(String placement, int roomId) {
+        return pick(this.ads.stream()
+                .filter(ad -> ad.getPlacement().equals(placement))
+                .filter(ad -> ad.getRooms().isEmpty() || ad.getRooms().contains(roomId))
+                .collect(Collectors.toList()));
+    }
+
+    /** An ad of the placement limited to rooms that include this one (none without a room limit). */
+    public Advertisement pickLimitedTo(String placement, int roomId) {
+        return pick(this.ads.stream()
+                .filter(ad -> ad.getPlacement().equals(placement) && ad.getRooms().contains(roomId))
+                .collect(Collectors.toList()));
     }
 
     private static Advertisement pick(List<Advertisement> candidates) {
