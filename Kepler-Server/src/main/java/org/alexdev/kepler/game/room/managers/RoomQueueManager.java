@@ -31,8 +31,9 @@ import java.util.Map;
  *   player to the spectator queue and back. A spectator gets the room without an avatar (YOUARESPECTATOR: the client
  *   shows it on its TV screen with "tilskuere 3/10"), doesn't count as a visitor and can't act in the room. With no
  *   room queue, a full room seats people as spectators straight away.</li>
- *   <li>While people wait for a seat, a spectator who has watched for room.spectator.turn.minutes makes room for the
- *   next (REMOVE_SPECTATORS: "Beklager! Nu er det en andens tur til at se eventet.").</li>
+ *   <li>Optional (setting room.spectator.turn.minutes, 0 = off by default): while people wait for a seat, a spectator
+ *   who has watched that long makes room for the next (REMOVE_SPECTATORS: "Beklager! Nu er det en andens tur til at se
+ *   eventet.").</li>
  *   <li>Without a queue or a free place: "Rummet er fyldt." (or "Køen til dette rum er fyldt op" when the queue is full).</li>
  * </ul>
  * Staff (fuse_enter_full_rooms), the room photographer and a private room's owner always get in. The queue is
