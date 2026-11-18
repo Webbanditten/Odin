@@ -87,6 +87,10 @@ public class NAVNODEINFO extends MessageComposer {
         }
 
         for (NavigatorCategory subCategory : this.subCategories) {
+            if (subCategory.isHidden()) {
+                continue;
+            }
+
             boolean hasFuse = this.userFuses.stream().anyMatch(r -> r.getFuse().equalsIgnoreCase(subCategory.getFuseAccess()));
             if (!hasFuse) {
                 continue;

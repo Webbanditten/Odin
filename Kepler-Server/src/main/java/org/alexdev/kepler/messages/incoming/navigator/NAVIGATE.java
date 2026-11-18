@@ -45,7 +45,7 @@ public class NAVIGATE implements MessageEvent {
 
         NavigatorCategory category = NavigatorManager.getInstance().getCategoryById(categoryId);
 
-        if (category == null) {
+        if (category == null || category.isHidden()) {
             return;
         }
 
@@ -62,11 +62,13 @@ public class NAVIGATE implements MessageEvent {
             Comparator<NavigatorCategory> arranged = Comparator.comparingInt(NavigatorCategory::getOrderId).thenComparingInt(NavigatorCategory::getId);
             subCategories.sort(GameConfiguration.getInstance().getBoolean("navigator.public.busiest.first") ? busiest.thenComparing(arranged) : arranged);
         } else {
-            // Guest room categories as before (busiest first, then id), with the ranking categories (the day's, week's and
-            // all-time best rooms) on top in their order_id.
+            // Guest room categories (Housekeeping > Room categories): the ranking categories (the day's, week's and all-time
+            // best rooms) first in their order, then the others busiest first (navigator.private.busiest.first) and in
+            // their order_id between equals, or always in their order_id.
+            Comparator<NavigatorCategory> arranged = Comparator.comparingInt(NavigatorCategory::getOrderId).thenComparingInt(NavigatorCategory::getId);
+            Comparator<NavigatorCategory> others = GameConfiguration.getInstance().getBoolean("navigator.private.busiest.first") ? busiest.thenComparing(arranged) : arranged;
             subCategories.sort(Comparator.comparing((NavigatorCategory c) -> !c.isRanking())
-                    .thenComparing((a, b) -> a.isRanking() && b.isRanking() ? Integer.compare(a.getOrderId(), b.getOrderId()) : 0)
-                    .thenComparing(busiest).thenComparingInt(NavigatorCategory::getId));
+                    .thenComparing((a, b) -> a.isRanking() && b.isRanking() ? arranged.compare(a, b) : others.compare(a, b)));
         }
 
         List<Room> rooms = new ArrayList<>();
