@@ -4,6 +4,7 @@ import org.alexdev.kepler.game.room.managers.RoomQueueManager;
 import org.alexdev.kepler.dao.mysql.PetDao;
 import org.alexdev.kepler.dao.mysql.RoomDao;
 import org.alexdev.kepler.dao.mysql.RoomVoteDao;
+import org.alexdev.kepler.util.DateUtil;
 import org.alexdev.kepler.game.GameScheduler;
 import org.alexdev.kepler.game.entity.Entity;
 import org.alexdev.kepler.game.fuserights.Fuse;
@@ -51,7 +52,8 @@ public class Room {
     private List<Entity> entities;
     private List<Item> items;
     private List<Integer> rights;
-    private Map<Integer, Integer> votes;
+    /** Voter id -> when they may vote on this room again (seconds). RoomRatings. */
+    private Map<Integer, Long> votes;
 
     public Room() {
         this.roomData = new RoomData(this);
@@ -139,7 +141,8 @@ public class Room {
      * @return boolean indicating if the user has voted
      */
     public boolean hasVoted(int userId) {
-        return this.votes.containsKey(userId);
+        Long until = this.votes.get(userId);
+        return until != null && until > DateUtil.getCurrentTimeSeconds();
     }
 
     /**
@@ -149,18 +152,17 @@ public class Room {
      * @param userId user that is voting
      */
     public void addVote(int answer, int userId) {
-        // Add vote to in-memory structure
-        this.votes.put(userId, answer);
+        // Every vote is kept (RoomRatings): it counts in the rating forever and in the day's and week's best rooms
+        // for 24 hours / 7 days; its voter may vote on this room again after room.rating.vote.days.
+        long now = DateUtil.getCurrentTimeSeconds();
+        long until = now + RoomRatings.getInstance().getVoteInterval();
+        this.votes.put(userId, until);
+        RoomVoteDao.vote(userId, this.roomData.getId(), answer, now, until);
 
-        // Re-calculate sum of all ratings
-        int sum = this.votes.values().stream().mapToInt(Integer::intValue).sum();
-
-        if (sum < 0) {
-            sum = 0;
-        }
-
-        this.roomData.setRating(sum);
-        RoomDao.saveRating(this.getId(), sum);
+        int rating = RoomVoteDao.getRating(this.getId());
+        this.roomData.setRating(rating);
+        RoomDao.saveRating(this.getId(), rating);
+        RoomRatings.getInstance().reset();
 
         // Send new vote count to all player entities
         for (Player p : this.roomEntityManager.getPlayers()) {
@@ -171,8 +173,6 @@ public class Room {
                 p.send(new UPDATE_VOTES(this.roomData.getRating()));
             }
         }
-
-        RoomVoteDao.vote(userId, this.roomData.getId(), answer);
     }
 
     /**
@@ -412,7 +412,7 @@ public class Room {
      *
      * @return map of votes
      */
-    public Map<Integer, Integer> getVotes() {
+    public Map<Integer, Long> getVotes() {
         return this.votes;
     }
 

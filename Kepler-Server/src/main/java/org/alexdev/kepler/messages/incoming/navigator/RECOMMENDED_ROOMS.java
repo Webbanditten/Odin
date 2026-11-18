@@ -4,31 +4,33 @@ import org.alexdev.kepler.dao.mysql.RoomDao;
 import org.alexdev.kepler.game.player.Player;
 import org.alexdev.kepler.game.room.Room;
 import org.alexdev.kepler.game.room.RoomManager;
+import org.alexdev.kepler.game.room.RoomRatings;
 import org.alexdev.kepler.messages.outgoing.navigator.RECOMMENDED_ROOM_LIST;
 import org.alexdev.kepler.messages.types.MessageEvent;
 import org.alexdev.kepler.server.netty.streams.NettyRequest;
 
 import java.util.List;
 
+/**
+ * "Anbefalede Rum" in the navigator: the week's best rated open rooms (RoomRatings: votes cast in the last 7 days), then
+ * the best rated ones of all time when fewer rooms got votes this week.
+ */
 public class RECOMMENDED_ROOMS implements MessageEvent {
+    private static final int ROOM_LIMIT = 3;
+
     @Override
     public void handle(Player player, NettyRequest reader) {
-        int roomLimit = 3;
+        List<Room> roomList = RoomManager.getInstance().replaceQueryRooms(RoomRatings.getInstance().getRecommended(ROOM_LIMIT));
 
-        List<Room> roomList = RoomManager.getInstance().replaceQueryRooms(RoomDao.getRecommendedRooms(roomLimit, false));
-
-        RoomManager.getInstance().sortRooms(roomList);
-        RoomManager.getInstance().ratingSantiyCheck(roomList);
-
-        if (roomList.size() < roomLimit) {
-            //int difference = roomLimit - roomList.size();
-
-            for (Room room : RoomManager.getInstance().replaceQueryRooms(RoomDao.getHighestRatedRooms(roomLimit, false))) {
-                if (roomList.size() == roomLimit) {
+        if (roomList.size() < ROOM_LIMIT) {
+            for (Room room : RoomManager.getInstance().replaceQueryRooms(RoomDao.getHighestRatedRooms(ROOM_LIMIT * 2, false))) {
+                if (roomList.size() == ROOM_LIMIT) {
                     break;
                 }
 
-                roomList.add(room);
+                if (roomList.stream().noneMatch(r -> r.getId() == room.getId())) {
+                    roomList.add(room);
+                }
             }
         }
 

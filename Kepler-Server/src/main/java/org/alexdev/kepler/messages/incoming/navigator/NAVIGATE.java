@@ -8,6 +8,7 @@ import org.alexdev.kepler.game.navigator.NavigatorManager;
 import org.alexdev.kepler.game.player.Player;
 import org.alexdev.kepler.game.room.Room;
 import org.alexdev.kepler.game.room.RoomManager;
+import org.alexdev.kepler.game.room.RoomRatings;
 import org.alexdev.kepler.messages.outgoing.messenger.ROOMFORWARD;
 import org.alexdev.kepler.messages.outgoing.navigator.NAVNODEINFO;
 import org.alexdev.kepler.messages.types.MessageEvent;
@@ -61,7 +62,11 @@ public class NAVIGATE implements MessageEvent {
             Comparator<NavigatorCategory> arranged = Comparator.comparingInt(NavigatorCategory::getOrderId).thenComparingInt(NavigatorCategory::getId);
             subCategories.sort(GameConfiguration.getInstance().getBoolean("navigator.public.busiest.first") ? busiest.thenComparing(arranged) : arranged);
         } else {
-            subCategories.sort(busiest.thenComparingInt(NavigatorCategory::getId)); // guest room categories: as before
+            // Guest room categories as before (busiest first, then id), with the ranking categories (the day's, week's and
+            // all-time best rooms) on top in their order_id.
+            subCategories.sort(Comparator.comparing((NavigatorCategory c) -> !c.isRanking())
+                    .thenComparing((a, b) -> a.isRanking() && b.isRanking() ? Integer.compare(a.getOrderId(), b.getOrderId()) : 0)
+                    .thenComparing(busiest).thenComparingInt(NavigatorCategory::getId));
         }
 
         List<Room> rooms = new ArrayList<>();
@@ -85,6 +90,14 @@ public class NAVIGATE implements MessageEvent {
 
                 rooms.add(room);
             }
+        } else if (category.isRanking()) {
+            for (Room room : RoomManager.getInstance().replaceQueryRooms(RoomRatings.getInstance().getRooms(category.getRanking()))) {
+                if (hideFull && (room.getData().getVisitorsNow() >= room.getData().getVisitorsMax())) {
+                    continue;
+                }
+
+                rooms.add(room);
+            }
         } else {
             for (Room room : RoomManager.getInstance().replaceQueryRooms(NavigatorDao.getRecentRooms(30, category.getId()))) {
                 if (room.getData().getCategoryId() != category.getId()) {
@@ -101,11 +114,12 @@ public class NAVIGATE implements MessageEvent {
 
         if (category.isPublicSpaces()) {
             RoomManager.getInstance().sortPublicRooms(rooms);
+        } else if (category.isRanking()) {
+            // best rated first, as RoomRatings listed them
         } else {
             RoomManager.getInstance().sortRooms(rooms);
         }
 
-        RoomManager.getInstance().ratingSantiyCheck(rooms);
 
         player.send(new NAVNODEINFO(player, category, rooms, hideFull, subCategories, categoryCurrentVisitors, categoryMaxVisitors, player.getDetails().getFuseRights()));
 

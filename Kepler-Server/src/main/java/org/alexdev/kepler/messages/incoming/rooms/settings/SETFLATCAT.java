@@ -29,7 +29,7 @@ public class SETFLATCAT implements MessageEvent {
             return;
         }
 
-        if (category.isNode() || category.isPublicSpaces()) {
+        if (category.isNode() || category.isPublicSpaces() || category.isRanking()) {
             category = NavigatorManager.getInstance().getCategoryById(2); // No category
         }
 

@@ -18,7 +18,6 @@ public class SUSERF implements MessageEvent {
 
         if (roomList.size() > 0) {
             RoomManager.getInstance().sortRooms(roomList);
-            RoomManager.getInstance().ratingSantiyCheck(roomList);
 
             player.send(new FLAT_RESULTS(roomList));
         } else {
