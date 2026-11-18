@@ -1,43 +1,61 @@
 package org.alexdev.kepler.game.ads;
 
-public class Advertisement {
-    private int id;
-    private int roomId;
-    private boolean isLoadingAd;
-    private String image;
-    private String url;
-    private boolean enabled;
+import java.time.LocalDateTime;
+import java.util.Set;
 
-    public Advertisement(int id, boolean isLoadingAd, int roomId, String image, String url, boolean enabled) {
+/**
+ * An ad from the CMS's cms_ads table (Housekeeping > Ads). Odin serves the in-game placements: the billboard in public
+ * rooms, the room loading window and the pool screen. The CMS serves the picture (/ads/img/id, which counts the view)
+ * and the click (/ads/click/id, which counts it and redirects).
+ */
+public class Advertisement {
+    private final int id;
+    private final String placement;
+    private final String fit;
+    private final boolean hasClickUrl;
+    private final LocalDateTime startsAt;
+    private final LocalDateTime endsAt;
+    private final int weight;
+    private final Set<Integer> rooms;
+
+    public Advertisement(int id, String placement, String fit, boolean hasClickUrl, LocalDateTime startsAt, LocalDateTime endsAt, int weight, Set<Integer> rooms) {
         this.id = id;
-        this.isLoadingAd = isLoadingAd;
-        this.roomId = roomId;
-        this.image = image;
-        this.url = url;
-        this.enabled = enabled;
+        this.placement = placement;
+        this.fit = fit;
+        this.hasClickUrl = hasClickUrl;
+        this.startsAt = startsAt;
+        this.endsAt = endsAt;
+        this.weight = Math.max(1, weight);
+        this.rooms = rooms;
+    }
+
+    public boolean isActive(LocalDateTime now) {
+        return (this.startsAt == null || !this.startsAt.isAfter(now)) && (this.endsAt == null || this.endsAt.isAfter(now));
     }
 
     public int getId() {
         return id;
     }
 
-    public boolean isLoadingAd() {
-        return isLoadingAd;
+    public String getPlacement() {
+        return placement;
     }
 
-    public int getRoomId() {
-        return roomId;
+    /** Billboards: "auto" (the CMS slants a flat picture to the room's frame) or the frame format it was made for. */
+    public String getFit() {
+        return fit;
     }
 
-    public String getImage() {
-        return image;
+    public boolean hasClickUrl() {
+        return hasClickUrl;
     }
 
-    public String getUrl() {
-        return url;
+    public int getWeight() {
+        return weight;
     }
 
-    public boolean isEnabled() {
-        return enabled;
+    /** Billboards: the rooms it is shown in; empty = every room with a billboard. */
+    public Set<Integer> getRooms() {
+        return rooms;
     }
 }

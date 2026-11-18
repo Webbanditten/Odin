@@ -20,8 +20,9 @@ public class GameConfigWriter implements ConfigWriter {
         config.put("welcome.message.content", "Hello, %username%! And welcome to the Kepler server!");
 
         config.put("roller.tick.default", "2000");
-        config.put("room.ads", "false");
-        config.put("room.intersitial.ads", "false");
+        config.put("ads.url", "");
+        config.put("ads.loading.every", "3");
+        config.put("ads.pool.every", "6");
 
         config.put("afk.timer.seconds", "900");
         config.put("sleep.timer.seconds", "300");

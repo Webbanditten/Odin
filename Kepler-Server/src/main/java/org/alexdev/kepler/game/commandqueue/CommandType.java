@@ -19,7 +19,8 @@ public enum CommandType {
     RELOAD_CATALOGUE("reload_catalogue"),
     RELOAD_NAVIGATOR("reload_navigator"),
     RELOAD_INVENTORY("reload_inventory"),
-    RELOAD_SETTINGS("reload_settings");
+    RELOAD_SETTINGS("reload_settings"),
+    RELOAD_ADS("reload_ads");
 
     private final String commandName;
 

@@ -82,10 +82,15 @@ public class ReloadCommand extends Command {
             componentName = "Game settings";
         }
 
+        if (component.equalsIgnoreCase("ads")) {
+            org.alexdev.kepler.game.ads.AdManager.reset();
+            componentName = "Ads";
+        }
+
         if (componentName != null) {
             player.send(new ALERT(componentName + " has been reloaded."));
         } else {
-            player.send(new ALERT("You did not specify which component to reload!<br>You may reload either the catalogue/shop/items, models, texts or game settings."));
+            player.send(new ALERT("You did not specify which component to reload!<br>You may reload either the catalogue/shop/items, models, texts, ads or game settings."));
         }
     }
 

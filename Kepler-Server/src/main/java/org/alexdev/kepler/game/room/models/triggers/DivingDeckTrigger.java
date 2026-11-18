@@ -1,5 +1,7 @@
 package org.alexdev.kepler.game.room.models.triggers;
 
+import org.alexdev.kepler.game.ads.AdManager;
+import org.alexdev.kepler.game.ads.Advertisement;
 import org.alexdev.kepler.game.entity.Entity;
 import org.alexdev.kepler.game.entity.EntityType;
 import org.alexdev.kepler.game.player.Player;
@@ -7,6 +9,7 @@ import org.alexdev.kepler.game.room.Room;
 import org.alexdev.kepler.game.room.enums.StatusType;
 import org.alexdev.kepler.game.triggers.GenericTrigger;
 import org.alexdev.kepler.messages.outgoing.rooms.items.SHOWPROGRAM;
+import org.alexdev.kepler.util.config.GameConfiguration;
 
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -17,6 +20,7 @@ public class DivingDeckTrigger extends GenericTrigger {
         private final Room room;
         private Player player;
         private int cameraType;
+        private int turns;
 
         public PoolCamera(Room room) {
             this.room = room;
@@ -24,6 +28,12 @@ public class DivingDeckTrigger extends GenericTrigger {
 
         @Override
         public void run() {
+            this.turns++;
+
+            if (this.showAd()) {
+                return;
+            }
+
             if (this.player == null) {
                 this.spectateNewPlayer();
                 this.newCameraMode(-1);
@@ -46,6 +56,36 @@ public class DivingDeckTrigger extends GenericTrigger {
                     break;
                 }
             }
+        }
+
+        /**
+         * Every ads.pool.every-th turn (10 seconds each) the big screen shows a pool screen ad (Housekeeping > Ads) for 12
+         * seconds instead of a camera change. The pool casts' "Pool screen Class" downloads the picture first (it isn't
+         * clickable: the screen has no mouse handler). A dive takes the screen over, as before.
+         */
+        private boolean showAd() {
+            int every = GameConfiguration.getInstance().getInteger("ads.pool.every");
+            String baseUrl = AdManager.getBaseUrl();
+
+            if (every <= 0 || baseUrl == null || this.turns % every != 0) {
+                return false;
+            }
+
+            Advertisement ad = AdManager.getInstance().pick(AdManager.POOL_SCREEN);
+
+            if (ad == null) {
+                return false;
+            }
+
+            SHOWPROGRAM program = new SHOWPROGRAM(new String[]{"cam1", "ad", AdManager.getImageUrl(baseUrl, ad, null)});
+
+            for (Player player : this.room.getEntityManager().getPlayers()) {
+                if (!player.isPhotographer()) {
+                    player.send(program);
+                }
+            }
+
+            return true;
         }
 
         /**
