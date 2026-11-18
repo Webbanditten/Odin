@@ -6,7 +6,7 @@ import org.alexdev.kepler.util.config.writer.ConfigWriter;
 import java.util.Map;
 
 public class GameConfiguration {
-    private static GameConfiguration instance;
+    private static volatile GameConfiguration instance;
     private Map<String, String> config;
 
     public GameConfiguration(ConfigWriter configWriter) {
@@ -100,8 +100,8 @@ public class GameConfiguration {
      * Reset all game configuration values.
      */
     public static void reset(ConfigWriter configWriter) {
-        instance = null;
-        GameConfiguration.getInstance(configWriter);
+        // Load the new values first and swap them in, so nothing reading the settings meanwhile finds no instance.
+        instance = new GameConfiguration(configWriter);
     }
 
     /**

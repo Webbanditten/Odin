@@ -54,9 +54,16 @@ public class ClubSubscription {
     public static final long MONTH_SECONDS = 31L * 24 * 60 * 60;
 
     /**
-     * Months as member for the gold HC badge (HC2): from the first day of the 13th month, as on Habbo.
+     * Months as member for the gold HC badge (HC2), setting club.gold.months: 12 = from the first day of the 13th month,
+     * as on Habbo. 0 (or less) = no gold badge.
      */
-    public static final int GOLD_MONTHS = 12;
+    public static int getGoldMonths() {
+        try {
+            return GameConfiguration.getInstance().getInteger("club.gold.months");
+        } catch (NumberFormatException e) {
+            return 12;
+        }
+    }
 
     /**
      * Membership time up to now, in seconds: the time inside every membership period (users_club_periods), so breaks
@@ -268,8 +275,8 @@ public class ClubSubscription {
     }
 
     /**
-     * Refresh the HC badges: HC1 while subscribed, HC2 (gold) from 12 months as member. Both are given in memory on every
-     * login, not stored.
+     * Refresh the HC badges: HC1 while subscribed, HC2 (gold) from club.gold.months months as member. Both are given in
+     * memory on every login, not stored.
      *
      * @param player the player to check against
      */
@@ -295,7 +302,9 @@ public class ClubSubscription {
                 details.getBadges().add("HC1");
             }
 
-            if (getMemberMonths(details) >= GOLD_MONTHS) {
+            int goldMonths = getGoldMonths();
+
+            if (goldMonths > 0 && getMemberMonths(details) >= goldMonths) {
                 if (!details.getBadges().contains("HC2")) {
                     details.getBadges().add("HC2");
                 }
