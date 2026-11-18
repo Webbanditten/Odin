@@ -30,15 +30,20 @@ public class NAVIGATE implements MessageEvent {
 
         boolean wasFollow = false;
         int originalCategoryId = categoryId;
+        Room forwarded = null;
 
         if (categoryId >= RoomManager.PUBLIC_ROOM_OFFSET) { // Public room follow, there should not any categories with an ID of 1000 or over... lol
             Room room = RoomManager.getInstance().getRoomById(categoryId - RoomManager.PUBLIC_ROOM_OFFSET);
 
-            if (room != null) {
+            if (room != null && room.isPublicRoom()) {
                 wasFollow = true;
-                // A public room whose category doesn't exist (Habbo Poolen II's 10, the walkway parts' 7, ...) opens the
-                // public root instead; getCategory() returned null here and the follow threw.
-                categoryId = room.getCategory() != null ? room.getCategory().getId() : PUBLIC_ROOT_CATEGORY;
+                forwarded = room;
+                // The client enters a forwarded public room only once it is a node of the category it gets back; until
+                // then it asks again (NAVIGATE 1000+id, ROOMFORWARD, ... many times a second: the room photographer never
+                // got into Kongens Have). So a room whose category doesn't exist or is hidden comes back in the public
+                // root, and the room is added to the list below even when the navigator doesn't show it.
+                NavigatorCategory own = room.getCategory();
+                categoryId = own != null && !own.isHidden() ? own.getId() : PUBLIC_ROOT_CATEGORY;
                 player.send(new ROOMFORWARD(true, room.getData().getId()));
             }
         }
@@ -111,6 +116,13 @@ public class NAVIGATE implements MessageEvent {
                 }
 
                 rooms.add(room);
+            }
+        }
+
+        if (forwarded != null && category.isPublicSpaces()) {
+            final int forwardedId = forwarded.getId();
+            if (rooms.stream().noneMatch(r -> r.getId() == forwardedId)) {
+                rooms.add(forwarded);
             }
         }
 
