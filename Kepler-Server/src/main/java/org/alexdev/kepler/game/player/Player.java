@@ -134,8 +134,10 @@ public class Player extends Entity {
             this.send(new INFO_HOTEL_CLOSING(PlayerManager.getInstance().getMaintenanceAt()));
         }
 
-        if (ClubSubscription.isGiftDue(this)) {
-            this.send(new CLUB_GIFT(1));
+        int clubGifts = ClubSubscription.getGiftsDue(this.details);
+
+        if (clubGifts > 0) {
+            this.send(new CLUB_GIFT(clubGifts));
         }
 
         this.messenger.sendStatusUpdate();

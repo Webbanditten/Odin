@@ -60,6 +60,32 @@ public class BadgeDao {
     }
 
     /**
+     * Whether the user has this badge stored (given by hand, not by rank or Habbo Club).
+     */
+    public static boolean hasBadge(int userId, String badge) {
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        ResultSet row = null;
+
+        try {
+            conn = Storage.getStorage().getConnection();
+            stmt = Storage.getStorage().prepare("SELECT 1 FROM users_badges WHERE user_id = ? AND badge = ? LIMIT 1", conn);
+            stmt.setInt(1, userId);
+            stmt.setString(2, badge);
+            row = stmt.executeQuery();
+            return row.next();
+        } catch (SQLException e) {
+            Storage.logError(e);
+        } finally {
+            Storage.closeSilently(row);
+            Storage.closeSilently(stmt);
+            Storage.closeSilently(conn);
+        }
+
+        return false;
+    }
+
+    /**
      * Get all rank badges
      *
      * @return list of badges

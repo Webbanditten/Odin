@@ -39,8 +39,10 @@ public class SUBSCRIBE_CLUB implements MessageEvent {
 
         ClubSubscription.subscribeClub(player, days, credits);
 
-        if (ClubSubscription.isGiftDue(player)) {
-            player.send(new CLUB_GIFT(1));
+        int gifts = ClubSubscription.getGiftsDue(player.getDetails());
+
+        if (gifts > 0) {
+            player.send(new CLUB_GIFT(gifts));
         }
     }
 }
