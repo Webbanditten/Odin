@@ -13,7 +13,7 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * Drives the shows of the public rooms whose client code waits for the server to change them (docs/room-programs.md):
  * Club Mammoth's and Café Solnedgang's disco floors, Club Orient's light shows, Club 57's mood light and Det orange
- * Rum's floor lamp. Ticks every 500 ms; every room.programs.seconds (45; 0 = never) each channel moves on. A staff
+ * Rum's floor lamp. Ticks every 500 ms; every room.programs.seconds (20; 0 = never) each channel moves on. A staff
  * member can set a channel by hand (:program), which holds it until ":program auto".
  */
 public class RoomProgramTask implements Runnable, RoomShows {
