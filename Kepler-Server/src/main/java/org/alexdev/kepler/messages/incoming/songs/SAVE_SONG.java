@@ -1,5 +1,6 @@
 package org.alexdev.kepler.messages.incoming.songs;
 
+import org.alexdev.kepler.util.config.GameConfiguration;
 import org.alexdev.kepler.dao.mysql.SongMachineDao;
 import org.alexdev.kepler.game.fuserights.Fuse;
 import org.alexdev.kepler.game.fuserights.Fuseright;
@@ -47,6 +48,49 @@ public class SAVE_SONG implements MessageEvent {
 
         player.send(new SOUND_PACKAGES(SongMachineDao.getTracks(room.getItemManager().getSoundMachine().getId())));
         player.send(new SONG_NEW(room.getItemManager().getSoundMachine().getId(), title));
+    }
+
+    /**
+     * The sound sets a song's samples come from. Song data is "1:sample,slots;sample,slots:2:...:4:..." (one part per
+     * channel); sample 0 is silence, and set s holds samples 9s-8 .. 9s (SOUND_PACKAGES). Empty = only silence.
+     */
+    public static java.util.Set<Integer> soundSetsUsed(String song) {
+        java.util.Set<Integer> sets = new java.util.TreeSet<>();
+
+        if (song == null) {
+            return sets;
+        }
+
+        for (String channel : song.split(":")) {
+            for (String sample : channel.split(";")) {
+                int comma = sample.indexOf(',');
+
+                if (comma <= 0) {
+                    continue;
+                }
+
+                try {
+                    int id = Integer.parseInt(sample.substring(0, comma).trim());
+
+                    if (id > 0) {
+                        sets.add((id + 8) / 9);
+                    }
+                } catch (NumberFormatException ignored) {
+                }
+            }
+        }
+
+        return sets;
+    }
+
+    /** Setting soundmachine.songs.max: Trax per sound machine (0 = no limit). */
+    public static int songsMax() {
+        return Math.max(0, GameConfiguration.getInstance().getInteger("soundmachine.songs.max"));
+    }
+
+    public static boolean isMachineFull(int soundMachineId) {
+        int max = songsMax();
+        return max > 0 && SongMachineDao.getSongList(soundMachineId).size() >= max;
     }
 
     public static int calculateSongLength(String song) {

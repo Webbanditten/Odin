@@ -1,11 +1,15 @@
 package org.alexdev.kepler.messages.incoming.trade;
 
+import org.alexdev.kepler.dao.mysql.PlayerDao;
 import org.alexdev.kepler.game.entity.Entity;
 import org.alexdev.kepler.game.entity.EntityType;
 import org.alexdev.kepler.game.player.Player;
 import org.alexdev.kepler.game.room.Room;
 import org.alexdev.kepler.game.room.enums.StatusType;
+import org.alexdev.kepler.game.room.managers.RoomEntityManager;
 import org.alexdev.kepler.game.room.managers.RoomTradeManager;
+import org.alexdev.kepler.messages.outgoing.trade.TRADE_OTHER_NOT_ALLOWED;
+import org.alexdev.kepler.messages.outgoing.trade.TRADE_YOU_ARE_NOT_ALLOWED;
 import org.alexdev.kepler.messages.types.MessageEvent;
 import org.alexdev.kepler.server.netty.streams.NettyRequest;
 
@@ -38,6 +42,23 @@ public class TRADE_OPEN implements MessageEvent {
         }
 
         Player tradePartner = (Player) targetPartner;
+
+        if (tradePartner == player) {
+            return;
+        }
+
+        // Trade bans (Housekeeping > Users): the client's own "you may not trade" / "the other can't trade" alerts.
+        if (PlayerDao.isTradeBanned(player.getDetails().getId())) {
+            player.send(new TRADE_YOU_ARE_NOT_ALLOWED());
+            return;
+        }
+
+        // Already trading with someone else (opening would close their trade), hidden (spectator), or banned.
+        if (tradePartner.getRoomUser().getTradePartner() != null || RoomEntityManager.isHidden(tradePartner)
+                || PlayerDao.isTradeBanned(tradePartner.getDetails().getId())) {
+            player.send(new TRADE_OTHER_NOT_ALLOWED());
+            return;
+        }
 
         RoomTradeManager.close(player.getRoomUser());
         RoomTradeManager.close(tradePartner.getRoomUser());

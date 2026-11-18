@@ -22,11 +22,14 @@ import org.alexdev.kepler.messages.outgoing.user.NO_USER_FOUND;
 import org.alexdev.kepler.messages.outgoing.user.currencies.CREDIT_BALANCE;
 import org.alexdev.kepler.messages.types.MessageEvent;
 import org.alexdev.kepler.server.netty.streams.NettyRequest;
+import org.alexdev.kepler.messages.outgoing.catalogue.PURCHASE_NOT_ALLOWED;
 import org.alexdev.kepler.util.DateUtil;
 import org.alexdev.kepler.util.StringUtil;
 import org.alexdev.kepler.util.config.GameConfiguration;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class GRPC implements MessageEvent {
     @Override
@@ -44,10 +47,22 @@ public class GRPC implements MessageEvent {
 
         int price = item.getPrice();
 
-        Optional<CataloguePage> pageStream = CatalogueManager.getInstance().getCataloguePages().stream().filter(p -> item.hasPage(p.getId())).findFirst();
+        // The item may be on several pages: it can be bought from any page the player may open.
+        List<CataloguePage> itemPages = CatalogueManager.getInstance().getCataloguePages().stream().filter(p -> item.hasPage(p.getId())).collect(Collectors.toList());
 
-        boolean hasFuse = player.getDetails().getFuseRights().stream().anyMatch(r -> r.getFuse().equalsIgnoreCase(pageStream.get().getFuse()));
-        if (!pageStream.isPresent() || !hasFuse) {
+        if (itemPages.isEmpty()) {
+            return; // on no page (the old code threw here)
+        }
+
+        Optional<CataloguePage> page = itemPages.stream()
+                .filter(p -> player.getDetails().getFuseRights().stream().anyMatch(r -> r.getFuse().equalsIgnoreCase(p.getFuse())))
+                .findFirst();
+
+        if (page.isEmpty()) {
+            // Habbo Club ran out with the catalogue open, for example: say so when club would have allowed it.
+            boolean clubWouldAllow = !player.getDetails().hasClubSubscription() && PlayerDao.getFusesForPlayer(player.getDetails().getId(), true).stream()
+                    .anyMatch(r -> itemPages.stream().anyMatch(p -> r.getFuse().equalsIgnoreCase(p.getFuse())));
+            player.send(new PURCHASE_NOT_ALLOWED(clubWouldAllow ? PURCHASE_NOT_ALLOWED.CLUB_ONLY : PURCHASE_NOT_ALLOWED.NO_REASON));
             return;
         }
 
@@ -147,7 +162,7 @@ public class GRPC implements MessageEvent {
         PurchaseLogDao.log(player.getDetails(), isGift ? PurchaseLogDao.GIFT : PurchaseLogDao.CATALOGUE, receiverId,
                 item.getId(), item.getDefinition() != null ? item.getDefinition().getId() : null,
                 item.getDefinition() != null && !item.isPackage() ? item.getDefinition().getName() : item.getName(),
-                price, pageStream.get().getFuse());
+                price, page.get().getFuse());
         player.send(new CREDIT_BALANCE(player.getDetails()));
     }
 }

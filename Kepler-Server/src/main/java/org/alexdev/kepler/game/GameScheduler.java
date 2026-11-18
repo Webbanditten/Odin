@@ -1,5 +1,7 @@
 package org.alexdev.kepler.game;
 
+import org.alexdev.kepler.game.triggers.GameLobbyTrigger;
+import org.alexdev.kepler.messages.outgoing.games.IDLE_WARNING;
 import org.alexdev.kepler.game.room.managers.RoomQueueManager;
 import org.alexdev.kepler.dao.mysql.CurrencyDao;
 import org.alexdev.kepler.dao.mysql.PurseDao;
@@ -68,6 +70,15 @@ public class GameScheduler implements Runnable {
                             player.getRoomUser().setStatus(StatusType.AVATAR_SLEEP, "");
                             player.getRoomUser().setNeedsUpdate(true);
                         }
+                    }
+
+                    // In a game lobby they get a warning a minute before (hh_gamesys "gs_idlewarning").
+                    long afkLeft = player.getRoomUser().getTimerManager().getAfkTimer() - DateUtil.getCurrentTimeSeconds();
+
+                    if (afkLeft > 0 && afkLeft <= 60 && !player.getRoomUser().getTimerManager().isIdleWarned()
+                            && player.getRoomUser().getRoom().getModel().getRoomTrigger() instanceof GameLobbyTrigger) {
+                        player.getRoomUser().getTimerManager().setIdleWarned(true);
+                        player.send(new IDLE_WARNING());
                     }
 
                     // If their afk timer is up, send them out.

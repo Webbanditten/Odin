@@ -1,5 +1,6 @@
 package org.alexdev.kepler.messages.incoming.jukebox;
 
+import org.alexdev.kepler.messages.outgoing.songs.JUKEBOX_PLAYLIST_FULL;
 import org.alexdev.kepler.dao.mysql.SongMachineDao;
 import org.alexdev.kepler.game.fuserights.Fuse;
 import org.alexdev.kepler.game.fuserights.Fuseright;
@@ -17,6 +18,8 @@ import java.util.Comparator;
 import java.util.List;
 
 public class JUKEBOX_PLAYLIST_ADD implements MessageEvent {
+    public static final int PLAYLIST_MAX = 9;
+
     @Override
     public void handle(Player player, NettyRequest reader) throws Exception {
         if (player.getRoomUser().getRoom() == null) {
@@ -38,6 +41,12 @@ public class JUKEBOX_PLAYLIST_ADD implements MessageEvent {
 
         var playList = SongMachineDao.getSongPlaylist(room.getItemManager().getSoundMachine().getId());
         var loadedDiscs = JukeboxManager.getInstance().getDisks(room.getItemManager().getSoundMachine().getId());
+
+        // The client's jukebox playlist shows 9 lines (Jukebox Manager pPlaylistLimit).
+        if (playList.size() >= PLAYLIST_MAX) {
+            player.send(new JUKEBOX_PLAYLIST_FULL());
+            return;
+        }
 
         // Don't load a song if it's not in the jukebox
         if (loadedDiscs.keySet().stream().noneMatch(disc -> disc.getSongId() == songId)) {

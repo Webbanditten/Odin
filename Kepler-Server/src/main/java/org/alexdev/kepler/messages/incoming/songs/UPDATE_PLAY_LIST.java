@@ -1,5 +1,6 @@
 package org.alexdev.kepler.messages.incoming.songs;
 
+import org.alexdev.kepler.messages.outgoing.songs.PLAYLIST_INVALID;
 import org.alexdev.kepler.dao.mysql.SongMachineDao;
 import org.alexdev.kepler.game.fuserights.Fuse;
 import org.alexdev.kepler.game.fuserights.Fuseright;
@@ -10,6 +11,8 @@ import org.alexdev.kepler.messages.types.MessageEvent;
 import org.alexdev.kepler.server.netty.streams.NettyRequest;
 
 public class UPDATE_PLAY_LIST implements MessageEvent {
+    public static final int PLAYLIST_MAX = 5; // the client's own limit (SongList Manager pPlaylistLimit)
+
     @Override
     public void handle(Player player, NettyRequest reader) throws Exception {
         if (player.getRoomUser().getRoom() == null) {
@@ -28,7 +31,8 @@ public class UPDATE_PLAY_LIST implements MessageEvent {
 
         int amount = reader.readInt();
 
-        if (amount >= 6) {
+        if (amount > PLAYLIST_MAX) {
+            player.send(new PLAYLIST_INVALID(PLAYLIST_MAX));
             return;
         }
 

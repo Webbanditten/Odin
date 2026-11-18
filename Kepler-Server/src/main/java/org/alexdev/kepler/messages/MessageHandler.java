@@ -166,7 +166,7 @@ public class MessageHandler {
      */
     private void registerUserPackets() {
         registerEvent(7, new GET_INFO());
-        registerEvent(228, new GET_ACCOUNT_PREFERENCES());
+        // 228 is GET_SOUND_SETTING in this client (registered below); GET_ACCOUNT_PREFERENCES is a later client's.
         registerEvent(196, new PONG());
         registerEvent(44, new UPDATE());
         // (Unknown): 149 / BU@M@Flol123@H@J01.01.1991@C@Iqwerty123
@@ -410,6 +410,7 @@ public class MessageHandler {
         registerEvent(191, new MESSENGER_GETMESSAGES());
         registerEvent(36, new MESSENGER_ASSIGNPERSMSG());
         registerEvent(40, new MESSENGER_REMOVEBUDDY());
+        registerEvent(201, new MESSENGER_REPORTMESSAGE());
         registerEvent(33, new MESSENGER_SENDMSG());
         registerEvent(31, new MESSENGER_MARKREAD());
         registerEvent(32, new MESSENGER_MARKREAD());

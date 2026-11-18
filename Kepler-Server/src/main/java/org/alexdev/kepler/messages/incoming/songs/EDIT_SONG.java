@@ -1,5 +1,8 @@
 package org.alexdev.kepler.messages.incoming.songs;
 
+import java.util.stream.Collectors;
+import java.util.List;
+import org.alexdev.kepler.messages.outgoing.songs.SONG_MISSING_PACKAGES;
 import org.alexdev.kepler.dao.mysql.SongMachineDao;
 import org.alexdev.kepler.game.fuserights.Fuse;
 import org.alexdev.kepler.game.fuserights.Fuseright;
@@ -42,8 +45,21 @@ public class EDIT_SONG implements MessageEvent {
             return;
         }
 
-        player.send(new SONG_INFO(SongMachineDao.getSong(songId)));
-        player.send(new SOUND_PACKAGES(SongMachineDao.getTracks(room.getItemManager().getSoundMachine().getId())));
-        player.send(new USER_SOUND_PACKAGES(player.getInventory().getSoundsets()));
+        var tracks = SongMachineDao.getTracks(room.getItemManager().getSoundMachine().getId());
+        var handSets = player.getInventory().getSoundsets();
+
+        // Every sound set the song uses must be in the machine or in the hand (from where it can be inserted).
+        List<Integer> missing = SAVE_SONG.soundSetsUsed(song.getData()).stream()
+                .filter(set -> !tracks.containsValue(set) && !handSets.contains(set))
+                .collect(Collectors.toList());
+
+        if (!missing.isEmpty()) {
+            player.send(new SONG_MISSING_PACKAGES(missing));
+            return;
+        }
+
+        player.send(new SONG_INFO(song));
+        player.send(new SOUND_PACKAGES(tracks));
+        player.send(new USER_SOUND_PACKAGES(handSets));
     }
 }

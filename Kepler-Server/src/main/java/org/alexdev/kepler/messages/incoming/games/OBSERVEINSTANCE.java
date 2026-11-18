@@ -1,5 +1,6 @@
 package org.alexdev.kepler.messages.incoming.games;
 
+import org.alexdev.kepler.messages.outgoing.games.INSTANCE_NOT_AVAILABLE;
 import org.alexdev.kepler.game.games.history.GameHistory;
 import org.alexdev.kepler.game.games.Game;
 import org.alexdev.kepler.game.games.GameManager;
@@ -41,6 +42,8 @@ public class OBSERVEINSTANCE implements MessageEvent {
 
         if (finishedGame != null) {
             player.send(new GAMEINSTANCE(finishedGame));
+        } else {
+            player.send(new INSTANCE_NOT_AVAILABLE(gameId)); // "Spillet er blevet slettet."
         }
 
         /*if (game.getGameState() == GameState.WAITING) {

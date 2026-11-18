@@ -17,12 +17,22 @@ public class CALL_FOR_HELP extends MessageComposer {
         response.writeString(this.cfh.getCryId());
         response.writeInt(this.cfh.getCategory());
         response.writeString(this.cfh.getFormattedRequestTime());
-        response.writeString(this.cfh.getCaller());
+        response.writeString(this.cfh.getCallerName().isEmpty() ? String.valueOf(this.cfh.getCaller()) : this.cfh.getCallerName());
         response.writeString(this.cfh.getMessage());
+
+        if (this.cfh.getRoom() == null) {
+            // Not in a room (a reported console message on the hotel view): no room to go to.
+            response.writeString("0");
+            response.writeString("");
+            response.writeInt(3); // neither public (0), private (1) nor game (2)
+            response.writeString("");
+            return;
+        }
+
         response.writeString(String.valueOf(this.cfh.getRoom().getId()));
         response.writeString(this.cfh.getRoom().getData().getName());
 
-        if (this.cfh.getRoom() != null) {
+        {
             if (this.cfh.getRoom().isPublicRoom()) {
                 response.writeInt(0);
                 response.writeString(this.cfh.getRoom().getData().getCcts());

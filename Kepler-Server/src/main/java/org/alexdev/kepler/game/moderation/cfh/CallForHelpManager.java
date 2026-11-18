@@ -42,6 +42,7 @@ public class CallForHelpManager {
         Room room = caller.getRoomUser().getRoom();
 
         CallForHelp cfh = new CallForHelp(callId, callerId, room, message);
+        cfh.setCallerName(caller.getDetails().getName());
         this.callsForHelp.put(callId, cfh);
 
         // Persist to database
@@ -49,6 +50,22 @@ public class CallForHelpManager {
 
         sendToModerators(new CALL_FOR_HELP(cfh));
         caller.send(new CRY_RECEIVED());
+    }
+
+    /**
+     * A reported console message (the messenger's "Rapporter"): a call for help from the reporter that moderators get
+     * like any other (in game and in Housekeeping > Calls for help). It doesn't count as the reporter's own pending call
+     * and sends them no "call received" window.
+     */
+    public void submitReport(Player reporter, String message) {
+        int callId = this.latestCallId.getAndIncrement();
+        CallForHelp cfh = new CallForHelp(callId, reporter.getDetails().getId(), reporter.getRoomUser().getRoom(), message);
+        cfh.setCallerName(reporter.getDetails().getName());
+        cfh.setReport(true);
+        this.callsForHelp.put(callId, cfh);
+
+        CallForHelpDao.logCall(cfh, reporter.getDetails().getName());
+        sendToModerators(new CALL_FOR_HELP(cfh));
     }
 
     /**
@@ -69,7 +86,7 @@ public class CallForHelpManager {
      */
     public CallForHelp getPendingCall(int userId) {
         for (CallForHelp cfh : this.callsForHelp.values()) {
-            if (cfh.isOpen() && cfh.getCaller() == userId) {
+            if (cfh.isOpen() && cfh.getCaller() == userId && !cfh.isReport()) {
                 return cfh;
             }
         }

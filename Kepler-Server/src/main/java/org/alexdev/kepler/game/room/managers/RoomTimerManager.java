@@ -13,6 +13,7 @@ public class RoomTimerManager {
     private long afkTimer;
     private long sleepTimer;
     private long chatBubbleTimer;
+    private boolean idleWarned; // the game lobby's "you'll be kicked soon" was sent for this AFK timer
 
     public RoomTimerManager(RoomEntity roomEntity) {
         this.roomEntity = roomEntity;
@@ -42,6 +43,7 @@ public class RoomTimerManager {
      */
     public void resetRoomTimer(long afkTimer) {
         this.afkTimer = DateUtil.getCurrentTimeSeconds() + afkTimer;
+        this.idleWarned = false;
         this.sleepTimer = DateUtil.getCurrentTimeSeconds() + GameConfiguration.getInstance().getInteger("sleep.timer.seconds");
 
         // If the user was sleeping, remove the sleep and tell the room cycle to update our character
@@ -49,6 +51,14 @@ public class RoomTimerManager {
             this.roomEntity.removeStatus(StatusType.AVATAR_SLEEP);
             this.roomEntity.setNeedsUpdate(true);
         }
+    }
+
+    public boolean isIdleWarned() {
+        return this.idleWarned;
+    }
+
+    public void setIdleWarned(boolean idleWarned) {
+        this.idleWarned = idleWarned;
     }
 
     /**

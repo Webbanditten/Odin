@@ -66,7 +66,7 @@ public class SongMachineDao {
 
             // (int id, String title, int itemId, int length, String data, boolean isBurnt)
             if (resultSet.next()) {
-                song = new Song(resultSet.getInt("id"), resultSet.getString("title"), songId, resultSet.getInt("user_id"),
+                song = new Song(resultSet.getInt("id"), resultSet.getString("title"), resultSet.getLong("item_id"), resultSet.getInt("user_id"),
                         resultSet.getInt("length"), resultSet.getString("data"), resultSet.getBoolean("burnt"));
             }
 
@@ -234,7 +234,8 @@ public class SongMachineDao {
     }
 
 
-    public static void addSong(int userId, int soundMachineId, String title, int length, String data) throws SQLException {
+    /** Adds a song to a sound machine; returns its id (the client keeps it as the editor's song id). */
+    public static int addSong(int userId, int soundMachineId, String title, int length, String data) throws SQLException {
         Connection sqlConnection = null;
         PreparedStatement preparedStatement = null;
 
@@ -247,6 +248,14 @@ public class SongMachineDao {
             preparedStatement.setInt(4, length);
             preparedStatement.setString(5, data);
             preparedStatement.execute();
+
+            ResultSet keys = preparedStatement.getGeneratedKeys();
+
+            if (keys != null && keys.next()) {
+                return keys.getInt(1);
+            }
+
+            return 0;
         } catch (Exception e) {
             Storage.logError(e);
             throw e;
@@ -254,6 +263,31 @@ public class SongMachineDao {
             Storage.closeSilently(preparedStatement);
             Storage.closeSilently(sqlConnection);
         }
+    }
+
+    /** Whether the user already burned a different song with this title (two discs may not share a name). */
+    public static boolean hasBurnedTitle(int userId, String title, int exceptSongId) {
+        Connection sqlConnection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+
+        try {
+            sqlConnection = Storage.getStorage().getConnection();
+            preparedStatement = Storage.getStorage().prepare("SELECT 1 FROM soundmachine_songs WHERE user_id = ? AND burnt = 1 AND title = ? AND id <> ? LIMIT 1", sqlConnection);
+            preparedStatement.setInt(1, userId);
+            preparedStatement.setString(2, title);
+            preparedStatement.setInt(3, exceptSongId);
+            resultSet = preparedStatement.executeQuery();
+            return resultSet.next();
+        } catch (Exception e) {
+            Storage.logError(e);
+        } finally {
+            Storage.closeSilently(resultSet);
+            Storage.closeSilently(preparedStatement);
+            Storage.closeSilently(sqlConnection);
+        }
+
+        return false;
     }
 
     public static void saveSong(int songId, String title, int length, String data) throws SQLException {

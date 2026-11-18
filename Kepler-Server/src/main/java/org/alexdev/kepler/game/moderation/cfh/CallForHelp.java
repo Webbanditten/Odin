@@ -22,6 +22,8 @@ public class CallForHelp {
     private long expireTime;
     private boolean isDeleted;
     private int databaseId;
+    private String callerName = "";
+    private boolean report; // a reported console message (MESSENGER_REPORTMESSAGE), not the caller's own call
 
     CallForHelp(int cryId, int callerId, Room room, String message) {
         this.cryId = cryId;
@@ -54,6 +56,24 @@ public class CallForHelp {
 
     public int getCaller() {
         return this.callerId;
+    }
+
+    /** The caller's Habbo name, as moderators see it. */
+    public String getCallerName() {
+        return this.callerName;
+    }
+
+    void setCallerName(String callerName) {
+        this.callerName = callerName != null ? callerName : "";
+    }
+
+    /** A reported console message: doesn't count as the caller's own pending call. */
+    public boolean isReport() {
+        return this.report;
+    }
+
+    void setReport(boolean report) {
+        this.report = report;
     }
 
     public int getCryId() {

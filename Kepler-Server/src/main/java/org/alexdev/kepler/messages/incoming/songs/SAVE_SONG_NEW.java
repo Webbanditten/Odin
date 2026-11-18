@@ -1,5 +1,6 @@
 package org.alexdev.kepler.messages.incoming.songs;
 
+import org.alexdev.kepler.messages.outgoing.songs.SONG_LIST_FULL;
 import org.alexdev.kepler.dao.mysql.SongMachineDao;
 import org.alexdev.kepler.game.fuserights.Fuse;
 import org.alexdev.kepler.game.fuserights.Fuseright;
@@ -31,16 +32,22 @@ public class SAVE_SONG_NEW implements MessageEvent {
         // We don't want a user to get kicked when making cool beats
         player.getRoomUser().getTimerManager().resetRoomTimer();
 
+        if (SAVE_SONG.isMachineFull(room.getItemManager().getSoundMachine().getId())) {
+            player.send(new SONG_LIST_FULL(SAVE_SONG.songsMax()));
+            return;
+        }
+
         String title = StringUtil.filterInput(reader.readString(), true);
         String data = StringUtil.filterInput(reader.readString(), true);
 
-        SongMachineDao.addSong(player.getDetails().getId(),
+        int songId = SongMachineDao.addSong(player.getDetails().getId(),
                 room.getItemManager().getSoundMachine().getId(),
                 title,
                 SAVE_SONG.calculateSongLength(data),
                 data);
 
         player.send(new SOUND_PACKAGES(SongMachineDao.getTracks(room.getItemManager().getSoundMachine().getId())));
-        player.send(new SONG_NEW(room.getItemManager().getSoundMachine().getId(), title));
+        // The client keeps this id as the editor's song (later saves are SAVE_SONG_EDIT of it).
+        player.send(new SONG_NEW(songId, title));
     }
 }
