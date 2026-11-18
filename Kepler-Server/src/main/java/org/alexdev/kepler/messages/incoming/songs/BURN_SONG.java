@@ -1,5 +1,8 @@
 package org.alexdev.kepler.messages.incoming.songs;
 
+import org.alexdev.kepler.messages.outgoing.catalogue.NO_CREDITS;
+import org.alexdev.kepler.messages.outgoing.songs.INVALID_SONG_NAME;
+import org.alexdev.kepler.messages.outgoing.songs.INVALID_SONG_LENGTH;
 import org.alexdev.kepler.dao.mysql.PurchaseLogDao;
 import org.alexdev.kepler.dao.mysql.*;
 import org.alexdev.kepler.game.fuserights.Fuse;
@@ -39,6 +42,7 @@ public class BURN_SONG implements MessageEvent {
         }
 
         if (player.getDetails().getCredits() <= 0) {
+            player.send(new NO_CREDITS());
             return;
         }
 
@@ -46,7 +50,18 @@ public class BURN_SONG implements MessageEvent {
 
         Song song = SongMachineDao.getSong(songId);
 
-        if (song == null) {
+        // Only a song of this room's sound machine (any song id could be burned before).
+        if (song == null || song.getItemId() != room.getItemManager().getSoundMachine().getId()) {
+            return;
+        }
+
+        if (SAVE_SONG.soundSetsUsed(song.getData()).isEmpty() || song.getLength() <= 0) {
+            player.send(new INVALID_SONG_LENGTH());
+            return;
+        }
+
+        if (SongMachineDao.hasBurnedTitle(player.getDetails().getId(), song.getTitle(), song.getId())) {
+            player.send(new INVALID_SONG_NAME());
             return;
         }
 

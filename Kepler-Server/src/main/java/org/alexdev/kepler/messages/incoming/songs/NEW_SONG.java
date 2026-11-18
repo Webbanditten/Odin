@@ -1,5 +1,6 @@
 package org.alexdev.kepler.messages.incoming.songs;
 
+import org.alexdev.kepler.messages.outgoing.songs.SONG_LIST_FULL;
 import org.alexdev.kepler.dao.mysql.SongMachineDao;
 import org.alexdev.kepler.game.fuserights.Fuse;
 import org.alexdev.kepler.game.fuserights.Fuseright;
@@ -29,6 +30,11 @@ public class NEW_SONG implements MessageEvent {
 
         // We don't want a user to get kicked when making cool beats
         player.getRoomUser().getTimerManager().resetRoomTimer();
+
+        if (SAVE_SONG.isMachineFull(room.getItemManager().getSoundMachine().getId())) {
+            player.send(new SONG_LIST_FULL(SAVE_SONG.songsMax()));
+            return;
+        }
 
         player.send(new SOUND_PACKAGES(SongMachineDao.getTracks(room.getItemManager().getSoundMachine().getId())));
         player.send(new USER_SOUND_PACKAGES(player.getInventory().getSoundsets()));

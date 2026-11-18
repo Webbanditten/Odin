@@ -1,5 +1,6 @@
 package org.alexdev.kepler.messages.incoming.games;
 
+import org.alexdev.kepler.messages.outgoing.games.INSTANCE_NOT_AVAILABLE;
 import org.alexdev.kepler.game.games.Game;
 import org.alexdev.kepler.game.games.GameManager;
 import org.alexdev.kepler.game.games.enums.GameState;
@@ -35,7 +36,12 @@ public class INITIATEJOINGAME implements MessageEvent {
 
         Game game = GameManager.getInstance().getGameById(instanceId);
 
-        if (game == null || game.getGameState() != GameState.WAITING) {
+        if (game == null) {
+            player.send(new INSTANCE_NOT_AVAILABLE(instanceId)); // "Spillet er blevet slettet."
+            return;
+        }
+
+        if (game.getGameState() != GameState.WAITING) {
             return;
         }
 

@@ -579,6 +579,35 @@ public class PlayerDao {
     }
 
     /**
+     * Whether the player has a trade ban now (users.trade_banned_until, set in Housekeeping > Users). Read from the
+     * database on every trade, so a ban set in housekeeping applies at once.
+     */
+    public static boolean isTradeBanned(int id) {
+        Connection sqlConnection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+
+        try {
+            sqlConnection = Storage.getStorage().getConnection();
+            preparedStatement = Storage.getStorage().prepare("SELECT trade_banned_until FROM users WHERE id = ? LIMIT 1", sqlConnection);
+            preparedStatement.setInt(1, id);
+            resultSet = preparedStatement.executeQuery();
+
+            if (resultSet.next()) {
+                return resultSet.getLong("trade_banned_until") > DateUtil.getCurrentTimeSeconds();
+            }
+        } catch (Exception e) {
+            Storage.logError(e);
+        } finally {
+            Storage.closeSilently(resultSet);
+            Storage.closeSilently(preparedStatement);
+            Storage.closeSilently(sqlConnection);
+        }
+
+        return false;
+    }
+
+    /**
      * Gets the name.
      *
      * @param id the id

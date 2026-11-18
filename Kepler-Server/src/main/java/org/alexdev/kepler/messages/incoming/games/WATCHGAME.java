@@ -1,5 +1,8 @@
 package org.alexdev.kepler.messages.incoming.games;
 
+import org.alexdev.kepler.util.config.GameConfiguration;
+import org.alexdev.kepler.messages.outgoing.games.WATCH_FAILED;
+import org.alexdev.kepler.messages.outgoing.games.INSTANCE_NOT_AVAILABLE;
 import org.alexdev.kepler.game.games.Game;
 import org.alexdev.kepler.game.games.GameManager;
 import org.alexdev.kepler.game.games.enums.GameState;
@@ -33,6 +36,14 @@ public class WATCHGAME implements MessageEvent {
         Game game = GameManager.getInstance().getGameById(gameId);
 
         if (game == null) {
+            player.send(new INSTANCE_NOT_AVAILABLE(gameId));
+            return;
+        }
+
+        int spectatorsMax = GameConfiguration.getInstance().getInteger("games.spectators.max");
+
+        if (spectatorsMax > 0 && game.getSpectators().size() >= spectatorsMax) {
+            player.send(new WATCH_FAILED(gameId, 0)); // "Alle tilskuerpladserne er optagede!"
             return;
         }
 
