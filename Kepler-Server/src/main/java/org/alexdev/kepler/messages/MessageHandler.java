@@ -63,6 +63,7 @@ import org.alexdev.kepler.util.config.ServerConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class MessageHandler {
@@ -235,6 +236,8 @@ public class MessageHandler {
         registerEvent(114, new PTM());
         registerEvent(230, new GET_GROUP_BADGES());
         registerEvent(231, new GET_GROUP_DETAILS());
+        registerEvent(211, new ROOM_QUEUE_CHANGE());
+        registerEvent(216, new GET_SPECTATOR_AMOUNT());
     }
 
     /**
@@ -538,6 +541,13 @@ public class MessageHandler {
     private void invoke(Player player, int messageId, NettyRequest message) {
         if (this.messages.containsKey(messageId)) {
             MessageEvent event = this.messages.get(messageId);
+
+            // A room spectator has no avatar: nothing that acts in the room (the client offers none of it either).
+            if (player != null && player.getRoomUser().isSpectator() && !spectatorMayUse(event)) {
+                message.dispose();
+                return;
+            }
+
             try {
                 event.handle(player, message);
             } catch (Exception ex) {
@@ -553,6 +563,32 @@ public class MessageHandler {
         }
 
         message.dispose();
+    }
+
+    private static final String INCOMING = "org.alexdev.kepler.messages.incoming.";
+    private static final Set<String> SPECTATOR_BLOCKED_PACKAGES = Set.of("rooms.user", "rooms.items", "rooms.pool",
+            "rooms.teleporter", "rooms.dimmer", "rooms.moderation", "infobus", "trade", "wobblesquabble", "games", "pets");
+    private static final Set<String> SPECTATOR_ALLOWED = Set.of("QUIT", "SET_SOUND_SETTING", "GETPETSTAT");
+    private static final Set<String> SPECTATOR_BLOCKED = Set.of("FLATPROPBYITEM", "RATEFLAT", "SETBADGE",
+            "CAN_CREATE_ROOMEVENT", "CREATE_ROOMEVENT", "EDIT_ROOMEVENT", "QUIT_ROOMEVENT",
+            "ADD_JUKEBOX_DISC", "JUKEBOX_PLAYLIST_ADD", "REMOVE_JUKEBOX_DISC", "RESET_JUKEBOX",
+            "BURN_SONG", "DELETE_SONG", "EDIT_SONG", "EJECT_SOUND_PACKAGE", "INSERT_SOUND_PACKAGE", "NEW_SONG",
+            "SAVE_SONG_EDIT", "SAVE_SONG_NEW", "SAVE_SONG", "UPDATE_PLAY_LIST");
+
+    /** Whether a room spectator may send this message: leaving, the navigator, messenger, catalogue and so on. */
+    private static boolean spectatorMayUse(MessageEvent event) {
+        String name = event.getClass().getSimpleName();
+
+        if (SPECTATOR_ALLOWED.contains(name)) {
+            return true;
+        }
+
+        if (SPECTATOR_BLOCKED.contains(name)) {
+            return false;
+        }
+
+        String pkg = event.getClass().getPackageName();
+        return !(pkg.startsWith(INCOMING) && SPECTATOR_BLOCKED_PACKAGES.contains(pkg.substring(INCOMING.length())));
     }
 
     /**

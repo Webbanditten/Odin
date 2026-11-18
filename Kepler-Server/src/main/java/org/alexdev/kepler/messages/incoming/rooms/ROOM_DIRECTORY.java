@@ -1,5 +1,6 @@
 package org.alexdev.kepler.messages.incoming.rooms;
 
+import org.alexdev.kepler.game.room.managers.RoomQueueManager;
 import org.alexdev.kepler.game.fuserights.Fuse;
 import org.alexdev.kepler.game.fuserights.Fuseright;
 import org.alexdev.kepler.game.games.player.GamePlayer;
@@ -45,12 +46,8 @@ public class ROOM_DIRECTORY implements MessageEvent {
                 return;
             }
 
-            if (room.getData().getTotalVisitorsNow() >= room.getData().getTotalVisitorsMax() && !player.hasFuse(Fuse.ENTER_FULL_ROOMS)) {
-                player.send(new CANTCONNECT(QueueError.FULL));
-                return;
-            }
-
-            room.getEntityManager().enterRoom(player, null);
+            // In, or (when it's full) its queue, a spectator seat or "Rummet er fyldt."
+            RoomQueueManager.enter(room, player);
         }
      }
 }

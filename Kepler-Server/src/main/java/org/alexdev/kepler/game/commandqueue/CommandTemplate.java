@@ -13,6 +13,8 @@ public class CommandTemplate {
     public String RoomDescription;
     public String RoomName;
     public boolean RoomShowOwnerName;
+    public Integer RoomQueueMax;
+    public Integer RoomSpectatorsMax;
     public String Message;
     public String MessageUrl;
     public String MessageLink;

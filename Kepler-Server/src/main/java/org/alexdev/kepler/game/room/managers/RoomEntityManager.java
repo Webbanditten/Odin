@@ -30,6 +30,7 @@ import org.alexdev.kepler.messages.outgoing.rooms.items.BROADCAST_TELEPORTER;
 import org.alexdev.kepler.messages.outgoing.rooms.user.HOTEL_VIEW;
 import org.alexdev.kepler.messages.outgoing.rooms.user.LOGOUT;
 import org.alexdev.kepler.messages.outgoing.rooms.user.USER_OBJECTS;
+import org.alexdev.kepler.util.DateUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -94,20 +95,28 @@ public class RoomEntityManager {
     }
 
     /**
-     * The entities a player may see: everyone for the room photographer itself, everyone but the photographer for
-     * other players.
+     * Whether other players never see this entity in the room: the room photographer and room spectators (they watch
+     * without an avatar, RoomQueueManager).
+     */
+    public static boolean isHidden(Entity entity) {
+        return entity instanceof Player && (((Player) entity).isPhotographer() || ((Player) entity).getRoomUser().isSpectator());
+    }
+
+    /**
+     * The entities a player may see: everyone for the room photographer itself; for everyone else, all but the hidden
+     * ones (the photographer and spectators, a spectator itself included).
      */
     public static List<Entity> seenBy(Player viewer, Collection<Entity> entities) {
         if (viewer.isPhotographer()) {
             return new ArrayList<>(entities);
         }
 
-        return entities.stream().filter(entity -> !isPhotographer(entity)).collect(Collectors.toList());
+        return entities.stream().filter(entity -> !isHidden(entity)).collect(Collectors.toList());
     }
 
-    /** Players in the room as the navigator counts them (not the room photographer). */
+    /** Players in the room as the navigator counts them (not the room photographer or spectators). */
     private int visitorCount() {
-        return (int) this.getPlayers().stream().filter(player -> !player.isPhotographer()).count();
+        return (int) this.getPlayers().stream().filter(player -> !isHidden(player)).count();
     }
 
     /**
@@ -150,6 +159,18 @@ public class RoomEntityManager {
      * @param destination the (optional) destination to take the user to when they enter
      */
     public void enterRoom(Entity entity, Position destination) {
+        this.enterRoom(entity, destination, false);
+    }
+
+    /**
+     * Adds an entity to the room; a player can come in as a spectator (RoomQueueManager): in the room for everything
+     * that happens in it, but without an avatar.
+     */
+    public void enterRoom(Entity entity, Position destination, boolean spectator) {
+        if (entity instanceof Player) {
+            RoomQueueManager.leaveQueue((Player) entity); // in a room now, so no longer waiting for one
+        }
+
         if (entity.getRoomUser().getRoom() != null) {
             entity.getRoomUser().getRoom().getEntityManager().leaveRoom(entity, false);
         }
@@ -162,6 +183,10 @@ public class RoomEntityManager {
         entity.getRoomUser().reset();
         entity.getRoomUser().setRoom(this.room);
         entity.getRoomUser().setInstanceId(this.generateUniqueId());
+
+        if (spectator && entity instanceof Player) {
+            ((Player) entity).getRoomUser().setSpectatingSince(Math.max(1, DateUtil.getCurrentTimeSeconds()));
+        }
 
         Position entryPosition = this.room.getModel().getDoorLocation();
 
@@ -358,7 +383,7 @@ public class RoomEntityManager {
 
         // From this point onwards we send packets for the user to leave
         this.room.getData().setVisitorsNow(this.visitorCount());
-        if (!isPhotographer(entity)) {
+        if (!isHidden(entity)) {
             this.room.send(new LOGOUT(entity.getRoomUser().getInstanceId()));
         }
         this.room.tryDispose();

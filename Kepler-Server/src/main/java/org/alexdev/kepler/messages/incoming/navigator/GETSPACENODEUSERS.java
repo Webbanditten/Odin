@@ -1,5 +1,6 @@
 package org.alexdev.kepler.messages.incoming.navigator;
 
+import org.alexdev.kepler.game.room.managers.RoomEntityManager;
 import org.alexdev.kepler.game.player.Player;
 import org.alexdev.kepler.game.room.Room;
 import org.alexdev.kepler.game.room.RoomManager;
@@ -34,6 +35,8 @@ public class GETSPACENODEUSERS implements MessageEvent {
                 players.addAll(childRoom.getEntityManager().getPlayers());
             }
         }
+
+        players.removeIf(RoomEntityManager::isHidden); // spectators and the room photographer
 
         player.send(new NODESPACEUSERS(players));
     }

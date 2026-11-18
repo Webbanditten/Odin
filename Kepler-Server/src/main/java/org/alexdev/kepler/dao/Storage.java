@@ -203,6 +203,10 @@ public class Storage {
      * @param resultSet the result set
      */
     public static void closeSilently(ResultSet resultSet) {
+        if (resultSet == null) {
+            return;
+        }
+
         try {
             resultSet.close();
         } catch (Exception e) {
@@ -216,6 +220,10 @@ public class Storage {
      * @param preparedStatement the prepared statement
      */
     public static void closeSilently(PreparedStatement preparedStatement) {
+        if (preparedStatement == null) {
+            return;
+        }
+
         try {
             preparedStatement.close();
         } catch (Exception e) {
@@ -229,6 +237,10 @@ public class Storage {
      * @param sqlConnection the sql connection
      */
     public static void closeSilently(Connection sqlConnection) {
+        if (sqlConnection == null) {
+            return;
+        }
+
         try {
             sqlConnection.close();
         } catch (Exception e) {
