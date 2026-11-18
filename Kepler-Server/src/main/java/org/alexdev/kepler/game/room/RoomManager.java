@@ -4,6 +4,7 @@ import org.alexdev.kepler.dao.Storage;
 import org.alexdev.kepler.dao.mysql.RoomDao;
 import org.alexdev.kepler.dao.mysql.RoomFavouritesDao;
 import org.alexdev.kepler.dao.mysql.RoomVoteDao;
+import org.alexdev.kepler.util.config.GameConfiguration;
 import org.alexdev.kepler.game.room.handlers.walkways.WalkwaysEntrance;
 import org.alexdev.kepler.game.room.handlers.walkways.WalkwaysManager;
 
@@ -203,6 +204,22 @@ public class RoomManager {
      */
     public void sortRooms(List<Room> roomList) {
         roomList.sort(Comparator.comparingDouble((Room room) -> room.getData().getTotalVisitorsNow()).reversed());
+    }
+
+    /**
+     * Sort public rooms for the navigator: busiest first when navigator.public.busiest.first is on (the default), and
+     * otherwise, or between rooms with as many visitors, in the order set in Housekeeping > Public rooms.
+     *
+     * @param roomList the public rooms of one navigator category
+     */
+    public void sortPublicRooms(List<Room> roomList) {
+        Comparator<Room> arranged = Comparator.comparingInt((Room room) -> room.getData().getNavigatorOrder()).thenComparingInt(Room::getId);
+
+        if (GameConfiguration.getInstance().getBoolean("navigator.public.busiest.first")) {
+            roomList.sort(Comparator.comparingInt((Room room) -> room.getData().getTotalVisitorsNow()).reversed().thenComparing(arranged));
+        } else {
+            roomList.sort(arranged);
+        }
     }
 
     /**

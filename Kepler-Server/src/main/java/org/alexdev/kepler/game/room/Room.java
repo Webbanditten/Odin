@@ -223,7 +223,9 @@ public class Room {
             if (!ignoreRedirection) {
                 Room room = RoomManager.getInstance().getRoomById(roomId);
 
-                if (room.getData().isNavigatorHide()) {
+                // A hidden walkway part forwards to the room it belongs to; a room hidden on its own (no walkway, so no
+                // redirect) is still entered directly instead of forwarding to "public room 0".
+                if (room.getData().isNavigatorHide() && room.getFollowRedirect() > 0) {
                     roomId = room.getFollowRedirect();
                 }
             }

@@ -12,12 +12,15 @@ import org.alexdev.kepler.messages.outgoing.messenger.ROOMFORWARD;
 import org.alexdev.kepler.messages.outgoing.navigator.NAVNODEINFO;
 import org.alexdev.kepler.messages.types.MessageEvent;
 import org.alexdev.kepler.server.netty.streams.NettyRequest;
+import org.alexdev.kepler.util.config.GameConfiguration;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
 public class NAVIGATE implements MessageEvent {
+    /** The client's navigator.public.default: "Fællesrum", the root of the public room categories. */
+    private static final int PUBLIC_ROOT_CATEGORY = 3;
 
     @Override
     public void handle(Player player, NettyRequest reader) throws Exception {
@@ -32,7 +35,9 @@ public class NAVIGATE implements MessageEvent {
 
             if (room != null) {
                 wasFollow = true;
-                categoryId = room.getCategory().getId();
+                // A public room whose category doesn't exist (Habbo Poolen II's 10, the walkway parts' 7, ...) opens the
+                // public root instead; getCategory() returned null here and the follow threw.
+                categoryId = room.getCategory() != null ? room.getCategory().getId() : PUBLIC_ROOT_CATEGORY;
                 player.send(new ROOMFORWARD(true, room.getData().getId()));
             }
         }
@@ -49,7 +54,15 @@ public class NAVIGATE implements MessageEvent {
         }
 
         List<NavigatorCategory> subCategories = NavigatorManager.getInstance().getCategoriesByParentId(category.getId());
-        subCategories.sort(Comparator.comparingDouble(NavigatorCategory::getCurrentVisitors).reversed());
+        Comparator<NavigatorCategory> busiest = Comparator.comparingInt(NavigatorCategory::getCurrentVisitors).reversed();
+
+        if (category.isPublicSpaces()) {
+            // Housekeeping > Public rooms orders the public categories (order_id); busiest first unless switched off.
+            Comparator<NavigatorCategory> arranged = Comparator.comparingInt(NavigatorCategory::getOrderId).thenComparingInt(NavigatorCategory::getId);
+            subCategories.sort(GameConfiguration.getInstance().getBoolean("navigator.public.busiest.first") ? busiest.thenComparing(arranged) : arranged);
+        } else {
+            subCategories.sort(busiest.thenComparingInt(NavigatorCategory::getId)); // guest room categories: as before
+        }
 
         List<Room> rooms = new ArrayList<>();
 
@@ -86,7 +99,12 @@ public class NAVIGATE implements MessageEvent {
             }
         }
 
-        RoomManager.getInstance().sortRooms(rooms);
+        if (category.isPublicSpaces()) {
+            RoomManager.getInstance().sortPublicRooms(rooms);
+        } else {
+            RoomManager.getInstance().sortRooms(rooms);
+        }
+
         RoomManager.getInstance().ratingSantiyCheck(rooms);
 
         player.send(new NAVNODEINFO(player, category, rooms, hideFull, subCategories, categoryCurrentVisitors, categoryMaxVisitors, player.getDetails().getFuseRights()));

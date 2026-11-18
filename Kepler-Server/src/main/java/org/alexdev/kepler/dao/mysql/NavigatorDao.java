@@ -38,7 +38,8 @@ public class NavigatorDao {
                         row.getBoolean("public_spaces"), row.getBoolean("allow_trading"),
                         row.getString("fuse_access"),
                         row.getString("fuse_setflatcat"),
-                        row.getBoolean("isnode")
+                        row.getBoolean("isnode"),
+                        row.getInt("order_id")
                 );
 
                 categories.put(category.getId(), category);

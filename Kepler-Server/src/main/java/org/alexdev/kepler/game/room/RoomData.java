@@ -33,6 +33,7 @@ public class RoomData {
     private int visitorsMax;
     private int queueMax;
     private int spectatorsMax;
+    private int navigatorOrder;
     private int rating;
     private Game game;
     private int groupId;
@@ -288,6 +289,17 @@ public class RoomData {
 
     public void setSpectatorsMax(int spectatorsMax) {
         this.spectatorsMax = Math.max(0, spectatorsMax);
+    }
+
+    /**
+     * A public room's place in its navigator category (rooms.navigator_order, set in Housekeeping > Public rooms).
+     */
+    public int getNavigatorOrder() {
+        return navigatorOrder;
+    }
+
+    public void setNavigatorOrder(int navigatorOrder) {
+        this.navigatorOrder = navigatorOrder;
     }
 
     public int getRating(){
