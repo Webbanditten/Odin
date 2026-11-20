@@ -47,6 +47,26 @@ public class ClubPeriodDao {
      * ended yet) gets that end, or a new period starts now when the last one has ended (a new subscription after a break,
      * or club granted outside the game).
      */
+    /** Ends a running membership period now (Housekeeping's Habbo Club admin ending a membership). */
+    public static void endOpenPeriod(int userId, long now) {
+        Connection sqlConnection = null;
+        PreparedStatement preparedStatement = null;
+
+        try {
+            sqlConnection = Storage.getStorage().getConnection();
+            preparedStatement = Storage.getStorage().prepare("UPDATE users_club_periods SET ends_at = ? WHERE user_id = ? AND ends_at > ?", sqlConnection);
+            preparedStatement.setLong(1, now);
+            preparedStatement.setInt(2, userId);
+            preparedStatement.setLong(3, now);
+            preparedStatement.execute();
+        } catch (Exception e) {
+            Storage.logError(e);
+        } finally {
+            Storage.closeSilently(preparedStatement);
+            Storage.closeSilently(sqlConnection);
+        }
+    }
+
     public static void syncOpenPeriod(int userId, long now, long expiration) {
         if (expiration <= now) {
             return;

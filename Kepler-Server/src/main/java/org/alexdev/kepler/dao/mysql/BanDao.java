@@ -50,6 +50,37 @@ public class BanDao {
         return banned;
     }
 
+    /**
+     * Housekeeping's "Banned Habbos trying to enter" (OdinCMS): a banned player's login, or a connection from a banned IP
+     * address (no user yet). The same ban, address and user count once per 10 minutes, so a client that keeps retrying
+     * doesn't fill the table.
+     */
+    public static void logBlockedLogin(BannedPlayer ban, Integer userId, String username, String ip) {
+        Connection sqlConnection = null;
+        PreparedStatement preparedStatement = null;
+
+        try {
+            sqlConnection = Storage.getStorage().getConnection();
+            preparedStatement = Storage.getStorage().prepare("INSERT INTO banned_login_attempts (ban_id, ban_type, user_id, username, ip) " +
+                    "SELECT ?, ?, ?, ?, ? FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM banned_login_attempts WHERE ban_id = ? AND ip = ? " +
+                    "AND user_id <=> ? AND attempted_at > NOW() - INTERVAL 10 MINUTE)", sqlConnection);
+            preparedStatement.setInt(1, ban.getId());
+            preparedStatement.setString(2, ban.getBanType().name());
+            preparedStatement.setObject(3, userId);
+            preparedStatement.setString(4, username);
+            preparedStatement.setString(5, ip);
+            preparedStatement.setInt(6, ban.getId());
+            preparedStatement.setString(7, ip);
+            preparedStatement.setObject(8, userId);
+            preparedStatement.execute();
+        } catch (Exception e) {
+            Storage.logError(e);
+        } finally {
+            Storage.closeSilently(preparedStatement);
+            Storage.closeSilently(sqlConnection);
+        }
+    }
+
     public static int addBan(BannedPlayer bannedPlayer) {
         Connection sqlConnection = null;
         PreparedStatement preparedStatement = null;
