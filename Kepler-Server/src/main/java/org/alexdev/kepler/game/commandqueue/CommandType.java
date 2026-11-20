@@ -20,7 +20,8 @@ public enum CommandType {
     RELOAD_NAVIGATOR("reload_navigator"),
     RELOAD_INVENTORY("reload_inventory"),
     RELOAD_SETTINGS("reload_settings"),
-    RELOAD_ADS("reload_ads");
+    RELOAD_ADS("reload_ads"),
+    CLUB_DAYS("club_days");
 
     private final String commandName;
 

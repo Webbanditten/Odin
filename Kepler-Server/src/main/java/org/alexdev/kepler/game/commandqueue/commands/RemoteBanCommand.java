@@ -10,18 +10,19 @@ import org.alexdev.kepler.messages.outgoing.user.MODERATOR_ALERT;
 
 public class RemoteBanCommand implements Command {
     public void executeCommand(CommandTemplate commandArgs) {
+        // Every name in the list (this used to ban the list's last name once per entry).
         for (String username : commandArgs.Users) {
-            PlayerDetails details = PlayerDao.getDetails(username);
-            if(details != null) {
-                ModeratorBanUserAction banAction = new ModeratorBanUserAction();
-                String user = commandArgs.Users.get(commandArgs.Users.size()-1);
-                if(user != null) {
-                    PlayerDetails player = PlayerDao.getDetails(user.toLowerCase());
-                    if(player == null) return;
-
-                    banAction.doAction(null, player.getName(), commandArgs.BanLength, commandArgs.BanMachine, commandArgs.BanIp, commandArgs.Message, commandArgs.ExtraInfo, commandArgs.UserId);
-                }
+            if (username == null) {
+                continue;
             }
+
+            PlayerDetails details = PlayerDao.getDetails(username.toLowerCase());
+
+            if (details == null) {
+                continue;
+            }
+
+            new ModeratorBanUserAction().doAction(null, details.getName(), commandArgs.BanLength, commandArgs.BanMachine, commandArgs.BanIp, commandArgs.Message, commandArgs.ExtraInfo, commandArgs.UserId);
         }
 
     }

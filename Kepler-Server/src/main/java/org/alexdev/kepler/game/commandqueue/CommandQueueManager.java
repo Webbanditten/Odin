@@ -75,6 +75,9 @@ public class CommandQueueManager {
                 case RELOAD_ADS:
                     command = new ReloadAdsCommand();
                     break;
+                case CLUB_DAYS:
+                    command = new ClubDaysCommand();
+                    break;
                 default:
                     break;
             }

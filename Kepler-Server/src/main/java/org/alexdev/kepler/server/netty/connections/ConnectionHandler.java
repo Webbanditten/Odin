@@ -65,6 +65,7 @@ public class ConnectionHandler extends SimpleChannelInboundHandler<NettyRequest>
         var ipBanCheck = BanDao.hasBan(ipAddress, 0);
 
         if (ipBanCheck != null && ipBanCheck.getBanType() == BanType.IP_ADDRESS) {
+            BanDao.logBlockedLogin(ipBanCheck, null, null, ipAddress);
             player.send(new USER_BANNED(ipBanCheck.getReason()));
         }
 

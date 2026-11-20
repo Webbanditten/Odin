@@ -25,4 +25,6 @@ public class CommandTemplate {
     public String ExtraInfo;
     public Boolean BanIp;
     public Boolean BanMachine;
+    /** club_days: days of Habbo Club to give; 0 or less ends the membership now. */
+    public int Days;
 }

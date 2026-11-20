@@ -2,6 +2,7 @@ package org.alexdev.kepler.game.player;
 
 import io.netty.util.AttributeKey;
 import org.alexdev.kepler.Kepler;
+import org.alexdev.kepler.dao.mysql.BanDao;
 import org.alexdev.kepler.dao.mysql.BadgeDao;
 import org.alexdev.kepler.dao.mysql.PlayerDao;
 import org.alexdev.kepler.dao.mysql.RewardDao;
@@ -108,6 +109,7 @@ public class Player extends Entity {
         var banned = this.getDetails().isBanned();
 
         if (banned != null && banned.getUserId() == this.details.getId()) {
+            BanDao.logBlockedLogin(banned, this.details.getId(), this.details.getName(), NettyPlayerNetwork.getIpAddress(this.getNetwork().getChannel()));
             this.send(new USER_BANNED(banned.getReason()));
             GameScheduler.getInstance().getService().schedule(this::kickFromServer, 1, TimeUnit.SECONDS);
             return;
