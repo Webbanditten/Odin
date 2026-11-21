@@ -9,7 +9,7 @@ whose owner owns the pet). Code: `game/pets/` (needs, nature, commands, texts) a
 | Need | Levels | Status window | Drops one level every | Filled by |
 |---|---|---|---|---|
 | Hunger | 0-6 | `pet_hung_N` | `pet.hunger.step.minutes` (60) | a bowl meal +3 (`petfood3` "Lavt Energiindhold" +2), a treat +1 |
-| Thirst | 0-3 | `pet_thir_N` | `pet.thirst.step.minutes` (90) | a water bowl: full |
+| Thirst | 0-3 | `pet_thir_N` | `pet.thirst.step.minutes` (90) | a drink from a water bowl: full (the bowl loses one of its 5 levels) |
 | Happiness | 0-6 | `pet_mood_N` | `pet.happiness.step.minutes` (60) | playing with the ball: full; a treat +2, praise +1, a meal when hungry +1; scolding -1 |
 | Energy | 0-6 | (not shown) | `pet.energy.step.minutes` (15) | sleeping: +1 every `pet.energy.recover.seconds` (90); playing and following cost 1 |
 
@@ -32,17 +32,20 @@ obeyed command, else +1) or greets its owner, falls when scolded (-2) and by 2 a
 Needs first: tired (energy 1 or less, or now and then at night) it walks to its basket and sleeps (in the basket's place
 if it can't get there) until rested; at night (`pet.night.start.hour` 23 to `pet.night.end.hour` 7, hotel time) it sleeps
 on until morning unless woken. Thirsty or hungry, it goes to water or food (its own kind's: `pet_dog_food` etc., or
-`pet_food` for all); with none it begs its owner or looks sad. Unhappy, it plays with a ball. Otherwise it idles by its
+`pet_food` for all); with none it begs its owner or looks sad. A thirsty pet with only empty water bowls first walks to
+one, sniffs it and whines (at most every few minutes), then begs. Unhappy, it plays with a ball. Otherwise it idles by its
 nature: short walks nearby, sniffing, scratching, stretching, sitting, lying down, looking around, wagging when someone
 is near, jumping, a sound now and then (rarely the same thing twice in a row).
 
 People: it greets its owner when they come in (walks over, happy face, wagging tail; it may wake for it), sniffs friendly
-visitors or growls at them, and looks at anyone who says its name. Putting food or water in the room calls hungry
-pets over.
+visitors or growls at them, and looks at anyone who says its name. Putting food or water in the room, or filling a water
+bowl, calls hungry and thirsty pets over.
 
 Furni: a food bowl lasts four meals (`custom_data` counts them, then it is gone); a treat (`goodie1/2`) is one bite; a
-water bowl never runs dry ("Uendeligt vand", always state 5); the ball (`toy1`) turns while a pet plays with it (its 6
-frames, not saved).
+water bowl holds five drinks (`custom_data` 5 = full ... 0 = empty, the client's six water pictures; a new bowl comes full
+and keeps its level when picked up). Habbos with rights (and `fuse_any_room_controller` staff) fill it by double-clicking
+it: the client's "Furniture Waterbowl Class" sends `SETSTUFFDATA` "5", the only value Odin takes for a water bowl
+(`PetWaterBowlInteractor`). The ball (`toy1`) turns while a pet plays with it (its 6 frames, not saved).
 
 ## Commands
 
@@ -57,7 +60,7 @@ answers to the hotel's word (`pet.hotwords.*`) and a few others (`PetCommand`):
 | come_here / follow_me / go_away | kom her, følg mig, gå væk | comes next to you / follows you for 1-2 minutes / walks far away |
 | nest | sov | goes to its basket and sleeps (a short nap when rested) |
 | good / bad | godt / fy | praise / scold (always "heard") |
-| eat / drink | spis / drik | goes to food or water (refuses when full) |
+| eat / drink | spis / drik | goes to food or water (refuses when full; to an empty water bowl when that is all there is) |
 
 Whether it obeys: owner 55 + friendship × 0.4 %, others 30 + friendliness × 30 + friendship × 0.1 %; less when unhappy,
 tired (active commands), very hungry or Sur; more for Hengiven/Loyal/Nuttet/Ivrig; 10-97 %. A refusal is a puzzled
