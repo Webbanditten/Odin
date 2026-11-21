@@ -51,7 +51,7 @@ public class USER_OBJECTS extends MessageComposer {
                 response.writeKeyValue("i", states.getInstanceId());
                 response.writeKeyValue("n", states.getInstanceId() + Character.toString((char)4) + states.getDetails().getName());
                 response.writeKeyValue("f", states.getDetails().getFigure());
-                response.writeKeyValue("l", states.getPosition().getX() + " " + states.getPosition().getY() + " " + (int)states.getPosition().getZ());
+                response.writeKeyValue("l", states.getPosition().getX() + " " + states.getPosition().getY() + " " + Double.toString(StringUtil.format(states.getPosition().getZ())));
                 response.writeKeyValue("c", "");
             } else {
                 response.writeKeyValue("i", states.getInstanceId());

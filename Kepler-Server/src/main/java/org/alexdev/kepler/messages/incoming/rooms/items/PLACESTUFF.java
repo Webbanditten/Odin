@@ -6,6 +6,9 @@ import org.alexdev.kepler.game.item.Item;
 import org.alexdev.kepler.game.item.base.ItemBehaviour;
 import org.alexdev.kepler.game.fuserights.Fuseright;
 import org.alexdev.kepler.game.player.Player;
+import org.alexdev.kepler.game.pets.Pet;
+import org.alexdev.kepler.game.item.interactors.InteractionType;
+import org.alexdev.kepler.util.config.GameConfiguration;
 import org.alexdev.kepler.game.room.Room;
 import org.alexdev.kepler.game.texts.TextsManager;
 import org.alexdev.kepler.messages.outgoing.alert.ALERT;
@@ -123,6 +126,17 @@ public class PLACESTUFF implements MessageEvent {
             player.send(new ALERT(TextsManager.getInstance().getValue("roomdimmer_furni_limit")));
             return;
         }
+        // room.pets.max: a pet's basket brings the pet, so a full room takes no more baskets.
+        int maxPets = GameConfiguration.getInstance().getInteger("room.pets.max");
+
+        if (maxPets > 0 && item.getDefinition().getInteractionType() == InteractionType.PET_NEST
+                && room.getEntityManager().getEntitiesByClass(Pet.class).size() >= maxPets) {
+            String text = TextsManager.getInstance().getValue("room_max_pet_limit");
+            player.getInventory().getView("update");
+            player.send(new ALERT(text.isEmpty() ? "Der er allerede så mange kæledyr i rummet, som der må være." : text));
+            return;
+        }
+
         room.getMapping().addItem(player, item);
         player.getInventory().getItems().remove(item);
     }

@@ -268,10 +268,7 @@ public class Room {
                 roomItemManager.resetItemStates();
 
                 for (Pet pet : room.getEntityManager().getEntitiesByClass(Pet.class)) {
-                    PetDao.saveCoordinates(pet.getDetails().getId(),
-                            pet.getRoomUser().getPosition().getX(),
-                            pet.getRoomUser().getPosition().getY(),
-                            pet.getRoomUser().getPosition().getRotation());
+                    pet.saveDetails();
                 }
 
                 isActive = false;

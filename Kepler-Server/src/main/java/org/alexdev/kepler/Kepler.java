@@ -118,6 +118,7 @@ public class Kepler {
             CommandManager.getInstance();
             MessageHandler.getInstance();
             TextsManager.getInstance();
+            org.alexdev.kepler.game.pets.PetTexts.getInstance();
             RecyclerManager.getInstance();
             InfobusManager.getInstance();
 

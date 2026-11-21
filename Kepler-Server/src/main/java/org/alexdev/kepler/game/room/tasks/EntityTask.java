@@ -6,11 +6,11 @@ import org.alexdev.kepler.game.entity.EntityType;
 import org.alexdev.kepler.game.pathfinder.Position;
 import org.alexdev.kepler.game.pathfinder.Rotation;
 import org.alexdev.kepler.game.pets.Pet;
-import org.alexdev.kepler.game.pets.PetAction;
 import org.alexdev.kepler.game.pets.PetManager;
 import org.alexdev.kepler.game.player.Player;
 import org.alexdev.kepler.game.room.Room;
 import org.alexdev.kepler.game.room.entities.RoomEntity;
+import org.alexdev.kepler.game.room.entities.RoomPet;
 import org.alexdev.kepler.game.room.enums.StatusType;
 import org.alexdev.kepler.game.room.mapping.RoomTile;
 import org.alexdev.kepler.log.Log;
@@ -211,6 +211,10 @@ public class EntityTask implements Runnable {
 
                 roomEntity.removeStatus(StatusType.LAY);
                 roomEntity.removeStatus(StatusType.SIT);
+
+                if (roomEntity instanceof RoomPet) {
+                    ((RoomPet) roomEntity).clearPoses();
+                }
 
                 int rotation = isMoonwalkEnabled(entity) ?
                         Rotation.calculateWalkDirection(next.getX(), next.getY(), position.getX(), position.getY()) :

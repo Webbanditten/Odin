@@ -1,6 +1,7 @@
 package org.alexdev.kepler.dao.mysql;
 
 import org.alexdev.kepler.dao.Storage;
+import org.alexdev.kepler.game.pets.Pet;
 import org.alexdev.kepler.game.pets.PetDetails;
 import org.alexdev.kepler.util.DateUtil;
 
@@ -17,20 +18,23 @@ public class PetDao {
 
         try {
             sqlConnection = Storage.getStorage().getConnection();
-            preparedStatement = Storage.getStorage().prepare("INSERT INTO items_pets (item_id, name, type, race, colour, nature_positive, nature_negative, born, last_kip, last_eat, last_drink, last_playtoy, last_playuser) VALUES (?, ?, ? ,?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", sqlConnection);
+            preparedStatement = Storage.getStorage().prepare("INSERT INTO items_pets (item_id, name, type, race, colour, nature_positive, nature_negative, friendship, born, last_kip, last_eat, last_drink, last_playtoy, last_playuser) VALUES (?, ?, ? ,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", sqlConnection);
             preparedStatement.setLong(1, databaseId);
             preparedStatement.setString(2, name);
             preparedStatement.setString(3, type);
             preparedStatement.setInt(4, race);
             preparedStatement.setString(5, colour);
-            preparedStatement.setInt(6, ThreadLocalRandom.current().nextInt(0, 7));
-            preparedStatement.setInt(7, ThreadLocalRandom.current().nextInt(0, 7));
-            preparedStatement.setLong(8, DateUtil.getCurrentTimeSeconds());
+            // Nature: the status window's "Natur:" words. nature_positive = pet_frnd_0..11 (friendliness), nature_negative
+            // = pet_enrg_0..11 (energy); both decide how the pet behaves (Pet#getActivity, Pet#getSociability).
+            preparedStatement.setInt(6, ThreadLocalRandom.current().nextInt(0, Pet.NATURE_COUNT));
+            preparedStatement.setInt(7, ThreadLocalRandom.current().nextInt(0, Pet.NATURE_COUNT));
+            preparedStatement.setFloat(8, Pet.FRIENDSHIP_START);
             preparedStatement.setLong(9, DateUtil.getCurrentTimeSeconds());
             preparedStatement.setLong(10, DateUtil.getCurrentTimeSeconds());
             preparedStatement.setLong(11, DateUtil.getCurrentTimeSeconds());
             preparedStatement.setLong(12, DateUtil.getCurrentTimeSeconds());
             preparedStatement.setLong(13, DateUtil.getCurrentTimeSeconds());
+            preparedStatement.setLong(14, DateUtil.getCurrentTimeSeconds());
 
             preparedStatement.execute();
         } catch (Exception e) {
@@ -62,19 +66,26 @@ public class PetDao {
         }
     }
 
-    public static void saveDetails(int id, PetDetails petDetails) {
+    /**
+     * Save a pet's needs, friendship and where it is (so a restart doesn't put it back where the room last unloaded).
+     */
+    public static void saveDetails(int id, PetDetails petDetails, int x, int y, int rotation) {
         Connection sqlConnection = null;
         PreparedStatement preparedStatement = null;
 
         try {
             sqlConnection = Storage.getStorage().getConnection();
-            preparedStatement = Storage.getStorage().prepare("UPDATE items_pets SET last_kip = ?, last_eat = ?, last_drink = ?, last_playtoy = ?, last_playuser = ? WHERE id = ?", sqlConnection);
+            preparedStatement = Storage.getStorage().prepare("UPDATE items_pets SET last_kip = ?, last_eat = ?, last_drink = ?, last_playtoy = ?, last_playuser = ?, friendship = ?, x = ?, y = ?, rotation = ? WHERE id = ?", sqlConnection);
             preparedStatement.setLong(1, petDetails.getLastKip());
             preparedStatement.setLong(2, petDetails.getLastEat());
             preparedStatement.setLong(3, petDetails.getLastDrink());
             preparedStatement.setLong(4, petDetails.getLastPlayToy());
             preparedStatement.setLong(5, petDetails.getLastPlayUser());
-            preparedStatement.setInt(6, id);
+            preparedStatement.setFloat(6, petDetails.getFriendship());
+            preparedStatement.setInt(7, x);
+            preparedStatement.setInt(8, y);
+            preparedStatement.setInt(9, rotation);
+            preparedStatement.setInt(10, id);
             preparedStatement.execute();
         } catch (Exception e) {
             Storage.logError(e);
