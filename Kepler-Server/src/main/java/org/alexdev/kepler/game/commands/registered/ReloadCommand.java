@@ -67,6 +67,7 @@ public class ReloadCommand extends Command {
 
         if (component.equalsIgnoreCase("texts")) {
             TextsManager.reset();
+            org.alexdev.kepler.game.pets.PetTexts.getInstance().reload(true);
             componentName = "Texts";
         }
 
@@ -79,6 +80,7 @@ public class ReloadCommand extends Command {
                 component.equalsIgnoreCase("config")) {
 
             GameConfiguration.reset(new GameConfigWriter());
+            org.alexdev.kepler.game.pets.PetTexts.getInstance().reload(false);
             componentName = "Game settings";
         }
 

@@ -8,57 +8,42 @@ import org.alexdev.kepler.game.pets.Pet;
 import org.alexdev.kepler.game.player.Player;
 import org.alexdev.kepler.game.room.Room;
 import org.alexdev.kepler.game.room.entities.RoomEntity;
+import org.alexdev.kepler.game.room.tasks.PetTask;
 import org.alexdev.kepler.game.triggers.GenericTrigger;
 
+import java.util.function.Consumer;
+
+/**
+ * Water bowls: "Uendeligt vand", so they never run dry and always show full (state 5).
+ */
 public class PetWaterBowlInteractor extends GenericTrigger {
+    public static final String FULL = "5";
+
     @Override
     public void onItemPlaced(Player player, Room room, Item item) {
-        if (item.getCustomData().isBlank()) {
-            item.setCustomData("5");
+        if (!FULL.equals(item.getCustomData())) {
+            item.setCustomData(FULL);
             item.updateStatus();
             item.save();
         }
+
+        PetFoodInteractor.forEachPet(room, PetTask::foodPlaced);
     }
 
     @Override
     public void onEntityStop(Entity entity, RoomEntity roomEntity, Item item, boolean isRotation) {
-        if (entity.getType() != EntityType.PET) {
-            return;
-        }
-
-        var pet = (Pet) entity;
-        var front = item.getPosition().getSquareInFront();
-
-        pet.getRoomUser().look(front, true);
-        pet.getRoomUser().getTask().startDrinking();
+        PetFoodInteractor.reached(entity, item);
     }
 
-    public void onItemPickup(Player player, Room room, Item item) {
-        cancelPetsDrinking(room, item.getPosition());
-    }
-
-    public void onItemMoved(Player player, Room room, Item item, boolean isRotation, Position oldPosition, Item itemBelow, Item itemAbove) {
-        cancelPetsDrinking(room, oldPosition);
-    }
-
-    private void cancelPetsDrinking(Room room, Position position) {
-        room.getMapping().getTile(position).getEntities().forEach(x -> {
-            if (x.getType() == EntityType.PET) {
-                ((Pet)x).getRoomUser().getTask().drinkingComplete(false);
-            }
-        });
-    }
-
-    /*
     @Override
-    public void onEntityLeave(Entity entity, RoomEntity roomEntity, Item item) {
-        if (entity.getType() != EntityType.PET) {
-            return;
-        }
-
-        var pet = (Pet) entity;
-        pet.getRoomUser().getTask().eatingComplete();
+    public void onItemPickup(Player player, Room room, Item item) {
+        PetFoodInteractor.forEachPet(room, task -> task.itemGone(item));
     }
 
-     */
+    @Override
+    public void onItemMoved(Player player, Room room, Item item, boolean isRotation, Position oldPosition, Item itemBelow, Item itemAbove) {
+        if (!isRotation) {
+            PetFoodInteractor.forEachPet(room, task -> task.itemGone(item));
+        }
+    }
 }

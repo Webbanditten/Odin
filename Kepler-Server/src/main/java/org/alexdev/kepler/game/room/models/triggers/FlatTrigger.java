@@ -5,6 +5,7 @@ import org.alexdev.kepler.game.entity.Entity;
 import org.alexdev.kepler.game.entity.EntityType;
 import org.alexdev.kepler.game.item.Item;
 import org.alexdev.kepler.game.item.interactors.InteractionType;
+import org.alexdev.kepler.game.room.mapping.RoomTile;
 import org.alexdev.kepler.game.item.interactors.types.PetNestInteractor;
 import org.alexdev.kepler.game.pathfinder.Position;
 import org.alexdev.kepler.game.pets.PetDetails;
@@ -50,7 +51,12 @@ public class FlatTrigger extends GenericTrigger {
                     Position position = new Position(petDetails.getX(), petDetails.getY());
                     position.setRotation(petDetails.getRotation());
 
-                    interactor.addPet(room, petDetails, position);
+                    // Back where it was, unless furni was put there since (then in its basket).
+                    if (room.getMapping().getTile(position) == null || !RoomTile.isValidTile(room, null, position)) {
+                        position = item.getPosition().copy();
+                    }
+
+                    interactor.addPet(room, petDetails, position, item);
                 }
             }
         }

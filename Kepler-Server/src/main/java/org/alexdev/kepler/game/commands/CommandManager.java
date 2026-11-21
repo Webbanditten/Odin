@@ -55,6 +55,8 @@ public class CommandManager {
         this.commands.put(new String[] { "landscape" }, new LandscapeCommand());
         this.commands.put(new String[] { "landscapeanim" }, new LandscapeAnimCommand());
         this.commands.put(new String[] { "langcheck" }, new LangcheckCommand());
+        // The pet "Control" window (fuse_debug_window) sends these.
+        this.commands.put(new String[] { "passivate", "activate", "setdir", "actionon", "actionoff" }, new PetControlCommand());
 
         // Add client-side commands to list
         this.commands.put(new String[] { "chooser" }, new ChooserCommand());

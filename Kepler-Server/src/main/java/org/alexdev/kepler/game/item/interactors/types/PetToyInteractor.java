@@ -8,48 +8,29 @@ import org.alexdev.kepler.game.pets.Pet;
 import org.alexdev.kepler.game.player.Player;
 import org.alexdev.kepler.game.room.Room;
 import org.alexdev.kepler.game.room.entities.RoomEntity;
+import org.alexdev.kepler.game.room.tasks.PetTask;
 import org.alexdev.kepler.game.triggers.GenericTrigger;
 
+import java.util.function.Consumer;
+
+/**
+ * The ball (toy1): pets play with it when they are bored or unhappy (PetTask), and it turns while they do.
+ */
 public class PetToyInteractor extends GenericTrigger {
     @Override
     public void onEntityStop(Entity entity, RoomEntity roomEntity, Item item, boolean isRotation) {
-        if (entity.getType() != EntityType.PET) {
-            return;
-        }
-
-        var pet = (Pet) entity;
-        var front = item.getPosition().getSquareInFront();
-
-        pet.getRoomUser().look(front, true);
-        pet.getRoomUser().getTask().startPlay();
+        PetFoodInteractor.reached(entity, item);
     }
 
-    public void onItemPickup(Player player, Room room, Item item) {
-        cancelPetsPlaying(room, item.getPosition());
-    }
-
-    public void onItemMoved(Player player, Room room, Item item, boolean isRotation, Position oldPosition, Item itemBelow, Item itemAbove) {
-        cancelPetsPlaying(room, oldPosition);
-    }
-
-    private void cancelPetsPlaying(Room room, Position position) {
-        room.getMapping().getTile(position).getEntities().forEach(x -> {
-            if (x.getType() == EntityType.PET) {
-                ((Pet)x).getRoomUser().getTask().playingComplete(false);
-            }
-        });
-    }
-
-    /*
     @Override
-    public void onEntityLeave(Entity entity, RoomEntity roomEntity, Item item) {
-        if (entity.getType() != EntityType.PET) {
-            return;
-        }
-
-        var pet = (Pet) entity;
-        pet.getRoomUser().getTask().eatingComplete();
+    public void onItemPickup(Player player, Room room, Item item) {
+        PetFoodInteractor.forEachPet(room, task -> task.itemGone(item));
     }
 
-     */
+    @Override
+    public void onItemMoved(Player player, Room room, Item item, boolean isRotation, Position oldPosition, Item itemBelow, Item itemAbove) {
+        if (!isRotation) {
+            PetFoodInteractor.forEachPet(room, task -> task.itemGone(item));
+        }
+    }
 }

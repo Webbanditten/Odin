@@ -24,7 +24,16 @@ public enum StatusType {
     PET_SLEEP("slp"),
     EAT("eat"),
     SMILE("sml"),
-    PLAY("pla");
+    PLAY("pla"),
+    // Pet poses and faces the client's Pet Class draws (hh_pets_common "Pet Class": action_<code>). A pet's face is
+    // "gst <face>" (sml, joy, agr, sad, puz, srp, tng, crz, eyb); "sml"/"agr"/"sad"/"puz" also move the tail.
+    PET_GESTURE("gst"),
+    SNIFF("snf"),
+    SCRATCH("scr"),
+    STRETCH("bnd"),
+    BEG("beg"),
+    READY("rdy"),
+    WAG("wav");
 
     private String statusCode;
 
