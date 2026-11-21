@@ -4,6 +4,8 @@ import org.alexdev.kepler.game.fuserights.Fuse;
 import org.alexdev.kepler.game.item.Item;
 import org.alexdev.kepler.game.item.base.ItemBehaviour;
 import org.alexdev.kepler.game.fuserights.Fuseright;
+import org.alexdev.kepler.game.item.interactors.InteractionType;
+import org.alexdev.kepler.game.item.interactors.types.PetWaterBowlInteractor;
 import org.alexdev.kepler.game.item.interactors.types.TeleportInteractor;
 import org.alexdev.kepler.game.pathfinder.Position;
 import org.alexdev.kepler.game.player.Player;
@@ -82,6 +84,8 @@ public class SETSTUFFDATA implements MessageEvent {
         }
 
         String newData = null;
+        boolean waterBowl = item.getDefinition().getInteractionType() == InteractionType.PET_WATER_BOWL;
+        boolean wasEmptying = waterBowl && PetWaterBowlInteractor.level(item) < PetWaterBowlInteractor.FULL_LEVEL;
 
         if (item.hasBehaviour(ItemBehaviour.GATE)) {
             if (itemData.equals("O") || itemData.equals("C") || itemData.equals("2") || itemData.equals("1") || itemData.equals("0")) {
@@ -113,8 +117,8 @@ public class SETSTUFFDATA implements MessageEvent {
                 newData = itemData;
             }
 
-            // Special handler because we don't want to allow users to empty the waterbowl, only pets can
-            if (item.getDefinition().getSprite().startsWith("waterbowl") && itemData.equals("5")) {
+            // Water bowls can only be filled (the client sends "5" on a double-click); pets empty them by drinking.
+            if (waterBowl && itemData.equals(PetWaterBowlInteractor.FULL)) {
                 newData = itemData;
             }
 
@@ -144,6 +148,10 @@ public class SETSTUFFDATA implements MessageEvent {
 
         if (!item.getDefinition().hasBehaviour(ItemBehaviour.CUSTOM_DATA_TRUE_FALSE)) {
             item.save();
+        }
+
+        if (waterBowl && wasEmptying) {
+            PetWaterBowlInteractor.filled(room);
         }
     }
 }

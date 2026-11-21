@@ -3,6 +3,7 @@ package org.alexdev.kepler.game.room.tasks;
 import org.alexdev.kepler.game.item.Item;
 import org.alexdev.kepler.game.item.base.ItemBehaviour;
 import org.alexdev.kepler.game.item.interactors.InteractionType;
+import org.alexdev.kepler.game.item.interactors.types.PetWaterBowlInteractor;
 import org.alexdev.kepler.game.pathfinder.Position;
 import org.alexdev.kepler.game.pets.*;
 import org.alexdev.kepler.game.player.Player;
@@ -24,7 +25,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * A pet's mind, run once a second by StatusTask (reference: Odin/docs/pets.md).
  *
  * Needs come first: a tired pet goes to its basket and sleeps (longer at night), a thirsty or hungry one goes to its
- * water or food, or begs its owner when there is none, an unhappy one plays with a ball. Otherwise it idles the way its
+ * water or food, or begs its owner when there is none (a thirsty one first shows it the empty bowl), an unhappy one plays with a ball. Otherwise it idles the way its
  * nature says (energetic pets wander and play more, lazy ones sit and lie down, friendly ones seek people): sniffing,
  * scratching, stretching, wagging, looking around, short walks near where it is. It greets its owner when they come in,
  * sniffs or growls at visitors, looks at whoever says its name, and obeys commands (PetManager) depending on
@@ -68,6 +69,7 @@ public class PetTask extends TickTask {
     private long nextScold;
     private long lastObeyed;
     private long nextSave;
+    private long nextEmptyBowl;
     private boolean dirty;
 
     private long minSleepUntil;
@@ -182,6 +184,7 @@ public class PetTask extends TickTask {
 
         if (thirst <= 1 || (thirst == 2 && chance(0.3))) {
             if (this.seek(Activity.GO_WATER, false)) return;
+            if (thirst <= 1 && this.seekEmptyBowl(false)) return;
             if (thirst <= 1) { this.complain(); return; }
         }
 
@@ -700,7 +703,7 @@ public class PetTask extends TickTask {
                 }
                 break;
             case DRINK:
-                if (!this.seek(Activity.GO_WATER, true)) {
+                if (!this.seek(Activity.GO_WATER, true) && !this.seekEmptyBowl(true)) {
                     this.user().look(from, true);
                     this.face("sad", 4);
                     this.idle(now(), 3, 6);
@@ -826,6 +829,65 @@ public class PetTask extends TickTask {
         return false;
     }
 
+    /**
+     * Thirsty with only empty water bowls: go to the nearest and show it (at most every few minutes unless told to
+     * drink), so whoever is in the room sees what is missing.
+     */
+    private boolean seekEmptyBowl(boolean ordered) {
+        long now = now();
+
+        if (!ordered && now < this.nextEmptyBowl) {
+            return false;
+        }
+
+        Position position = this.user().getPosition();
+        Item bowl = null;
+
+        for (Item item : this.room.getItemManager().getFloorItems()) {
+            if (item.getDefinition().getInteractionType() != InteractionType.PET_WATER_BOWL
+                    || PetWaterBowlInteractor.level(item) > 0
+                    || (item.getTile() != null && !item.getTile().getOtherEntities(this.pet).isEmpty())) {
+                continue;
+            }
+
+            if (bowl == null || item.getPosition().getDistanceSquared(position) < bowl.getPosition().getDistanceSquared(position)) {
+                bowl = item;
+            }
+        }
+
+        if (bowl == null) {
+            return false;
+        }
+
+        this.nextEmptyBowl = now + seconds(150, 300);
+        this.stopActivity();
+        this.targetItem = bowl;
+        this.ordered = ordered;
+        this.retries = 0;
+        this.activity = Activity.GO_WATER;
+
+        if (position.getX() == bowl.getPosition().getX() && position.getY() == bowl.getPosition().getY()) {
+            this.reachedItem(bowl);
+            return true;
+        }
+
+        if (this.walk(bowl.getPosition())) {
+            return true;
+        }
+
+        this.targetItem = null;
+        this.activity = Activity.IDLE;
+        return false;
+    }
+
+    /** At an empty water bowl: sniff it and whine; the next decisions beg the owner. */
+    private void foundEmptyBowl() {
+        this.targetItem = null;
+        this.pose(StatusType.SNIFF, seconds(3, 5) / 1000);
+        this.face("sad", 6);
+        this.say(PetTexts.Mood.BEG, 0.7);
+    }
+
     private boolean isFor(Activity goal, Item item) {
         InteractionType type = item.getDefinition().getInteractionType();
 
@@ -833,7 +895,7 @@ public class PetTask extends TickTask {
             case GO_FOOD:
                 return type == InteractionType.PET_FOOD && this.canEat(item) && bowlMeals(item) < BOWL_MEALS;
             case GO_WATER:
-                return type == InteractionType.PET_WATER_BOWL;
+                return type == InteractionType.PET_WATER_BOWL && PetWaterBowlInteractor.level(item) > 0;
             case GO_TOY:
                 return type == InteractionType.PET_TOY;
             default:
@@ -876,7 +938,13 @@ public class PetTask extends TickTask {
         if (item == this.targetItem) {
             switch (this.activity) {
                 case GO_FOOD: this.startEating(item); return;
-                case GO_WATER: this.startDrinking(item); return;
+                case GO_WATER:
+                    if (PetWaterBowlInteractor.level(item) > 0) {
+                        this.startDrinking(item);
+                    } else {
+                        this.foundEmptyBowl();
+                    }
+                    return;
                 case GO_TOY: this.startPlaying(item); return;
                 case GO_NEST: this.startSleeping(this.ordered); return;
                 default: break;
@@ -891,7 +959,8 @@ public class PetTask extends TickTask {
         if (type == InteractionType.PET_FOOD && this.canEat(item) && bowlMeals(item) < BOWL_MEALS
                 && this.pet.getHunger() <= PetStat.HUNGER.getMax() - 2) {
             this.startEating(item);
-        } else if (type == InteractionType.PET_WATER_BOWL && this.pet.getThirst() < PetStat.THIRST.getMax()) {
+        } else if (type == InteractionType.PET_WATER_BOWL && PetWaterBowlInteractor.level(item) > 0
+                && this.pet.getThirst() < PetStat.THIRST.getMax()) {
             this.startDrinking(item);
         } else if (type == InteractionType.PET_TOY && this.pet.getHappiness() < PetStat.HAPPINESS.getMax()
                 && this.pet.getEnergy() >= 2 && chance(0.5 + this.pet.getActivity() / 2)) {
@@ -923,7 +992,7 @@ public class PetTask extends TickTask {
     }
 
     /**
-     * Food was put in the room: hungry pets come.
+     * Food or water was put in the room, or a water bowl was filled: hungry and thirsty pets come.
      */
     public synchronized void foodPlaced() {
         if (this.activity == Activity.IDLE || this.activity == Activity.WANDER || this.activity == Activity.POSE && !this.ordered) {
@@ -1051,9 +1120,11 @@ public class PetTask extends TickTask {
         if (drank && item != null && item.getRoom() == this.room) {
             this.pet.setLevel(PetStat.THIRST, PetStat.THIRST.getMax());
 
-            // "Uendeligt vand": a water bowl never runs dry, so it always shows full.
-            if (!"5".equals(item.getCustomData())) {
-                item.setCustomData("5");
+            // Each drink takes one of the bowl's five levels; someone with rights fills it again (double-click).
+            int level = PetWaterBowlInteractor.level(item);
+
+            if (level > 0) {
+                item.setCustomData(String.valueOf(level - 1));
                 item.updateStatus();
                 item.save();
             }
