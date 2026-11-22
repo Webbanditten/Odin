@@ -7,6 +7,7 @@ import org.alexdev.kepler.game.item.ItemManager;
 import org.alexdev.kepler.game.item.base.ItemBehaviour;
 import org.alexdev.kepler.game.item.base.ItemDefinition;
 import org.alexdev.kepler.game.item.interactors.InteractionType;
+import org.alexdev.kepler.util.config.GameConfiguration;
 import org.alexdev.kepler.game.pets.PetManager;
 import org.alexdev.kepler.game.player.Player;
 import org.alexdev.kepler.messages.outgoing.user.currencies.FILM;
@@ -29,6 +30,30 @@ public class CatalogueManager {
         this.cataloguePackageList = CatalogueDao.getPackages();
         this.catalogueItemList = CatalogueDao.getItems();
         this.loadPackages();
+    }
+
+    /** Most of one catalogue item a purchase (or a gift) may hold: {@code catalogue.purchase.amount.max}, at least 1. */
+    public static int maxPurchaseAmount() {
+        return Math.max(1, GameConfiguration.getInstance().getInteger("catalogue.purchase.amount.max"));
+    }
+
+    /**
+     * Whether one purchase may buy several of this item: never furni whose purchase carries data (a trophy's
+     * inscription, a pet's name, a wallpaper's pattern), film, decoration, trophies or pet baskets.
+     */
+    public static boolean canBuySeveral(CatalogueItem item, String extraData) {
+        if (extraData != null && !extraData.isEmpty() && !extraData.equals("-")) {
+            return false;
+        }
+        if (item.isPackage()) {
+            return true;
+        }
+        ItemDefinition def = item.getDefinition();
+        if (def == null || def.getSprite().equals("film")) {
+            return false;
+        }
+        return !def.hasBehaviour(ItemBehaviour.DECORATION) && !def.hasBehaviour(ItemBehaviour.PRIZE_TROPHY)
+                && def.getInteractionType() != InteractionType.PET_NEST;
     }
 
     public List<Item> purchase(Player player, CatalogueItem item, String extraData, String overrideName, long timestamp) throws SQLException {
