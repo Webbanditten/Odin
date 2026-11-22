@@ -6,6 +6,7 @@ import org.alexdev.kepler.game.room.Room;
 import org.alexdev.kepler.game.room.managers.RoomTradeManager;
 import org.alexdev.kepler.messages.types.MessageEvent;
 import org.alexdev.kepler.server.netty.streams.NettyRequest;
+import org.apache.commons.lang3.StringUtils;
 
 public class TRADE_ADDITEM implements MessageEvent {
     @Override
@@ -20,14 +21,28 @@ public class TRADE_ADDITEM implements MessageEvent {
             return;
         }
 
-        int itemId = Integer.parseInt(reader.contents());
-        Item inventoryItem = player.getInventory().getItem(itemId);
+        // One item id, or several separated by spaces: the web client's hand offers a whole stack at once
+        // (Shift-click). Items already offered are skipped; the windows refresh once.
+        boolean added = false;
 
-        if (inventoryItem == null) {
-            return;
+        for (String part : reader.contents().trim().split("[ ,]+")) {
+            if (!StringUtils.isNumeric(part)) {
+                continue;
+            }
+
+            Item inventoryItem = player.getInventory().getItem(Integer.parseInt(part));
+
+            if (inventoryItem == null || player.getRoomUser().getTradeItems().contains(inventoryItem)) {
+                continue;
+            }
+
+            player.getRoomUser().getTradeItems().add(inventoryItem);
+            added = true;
         }
 
-        player.getRoomUser().getTradeItems().add(inventoryItem);
+        if (!added) {
+            return;
+        }
 
         RoomTradeManager.refreshWindow(player);
         RoomTradeManager.refreshWindow(player.getRoomUser().getTradePartner());
