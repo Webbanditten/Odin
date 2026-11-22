@@ -37,6 +37,14 @@ public class ItemManager {
      * @return the item as gift
      */
     public Item createGift(PlayerDetails toPlayer, PlayerDetails fromPlayer, String saleCode, String presentLabel, String extraData) throws Exception {
+        return createGift(toPlayer, fromPlayer, saleCode, presentLabel, extraData, 1);
+    }
+
+    /**
+     * A present holding {@code amount} of the catalogue item: the amount is the custom data's 6th field (only when it is
+     * more than one, so presents of one look as before), and PRESENTOPEN gives that many.
+     */
+    public Item createGift(PlayerDetails toPlayer, PlayerDetails fromPlayer, String saleCode, String presentLabel, String extraData, int amount) throws Exception {
         String sprite = "present_gen" + ThreadLocalRandom.current().nextInt(1, 7);
         ItemDefinition itemDef = ItemManager.getInstance().getDefinitionBySprite(sprite);
 
@@ -51,7 +59,8 @@ public class ItemManager {
                 Item.PRESENT_DELIMETER + fromPlayer.getName() +
                 Item.PRESENT_DELIMETER + presentLabel.replace(Item.PRESENT_DELIMETER, "") + //From Habbo" +
                 Item.PRESENT_DELIMETER + extraData.replace(Item.PRESENT_DELIMETER, "") +
-                Item.PRESENT_DELIMETER + DateUtil.getCurrentTimeSeconds());
+                Item.PRESENT_DELIMETER + DateUtil.getCurrentTimeSeconds() +
+                (amount > 1 ? Item.PRESENT_DELIMETER + amount : ""));
         item.setOwnedSince(DateUtil.getCurrentTimeSeconds());
 
         try {

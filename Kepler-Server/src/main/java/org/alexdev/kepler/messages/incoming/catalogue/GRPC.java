@@ -46,12 +46,15 @@ public class GRPC implements MessageEvent {
             return;
         }
 
-        // The web client's purchase dialog can ask for several (a 7th line after the gift flag "0"); older clients send
-        // none, and gifts, furni with purchase data (trophies, pets, wallpaper) and film are always one.
+        // The web client's purchase dialog can ask for several: the line after the gift receiver ("0", amount) or, for a
+        // gift, after its message ("1", receiver, message, amount). Older clients send none and buy one. Furni with
+        // purchase data of their own (trophies, pets, wallpaper), film and pet baskets are always one; a gift of several
+        // is one present that holds them all.
+        boolean giftOrder = data.length > 5 && data[5].equals("1");
+        int amountLine = giftOrder ? 8 : 6;
         int amount = 1;
-        if (data.length > 6 && !data[5].equals("1") && StringUtils.isNumeric(data[6]) && data[6].length() <= 4) {
-            int max = Math.max(1, GameConfiguration.getInstance().getInteger("catalogue.purchase.amount.max"));
-            amount = Math.max(1, Math.min(max, Integer.parseInt(data[6])));
+        if (data.length > amountLine && StringUtils.isNumeric(data[amountLine]) && data[amountLine].length() <= 4) {
+            amount = Math.max(1, Math.min(CatalogueManager.maxPurchaseAmount(), Integer.parseInt(data[amountLine])));
             if (amount > 1 && !CatalogueManager.canBuySeveral(item, data[4])) {
                 amount = 1;
             }
@@ -113,7 +116,7 @@ public class GRPC implements MessageEvent {
                 extraData = String.valueOf(item.getItemSpecialId());
             }
 
-            Item present = ItemManager.getInstance().createGift(receivingUserDetails, player.getDetails(), item.getSaleCode(), StringUtil.filterInput(presentNote, false), extraData);//new Item();
+            Item present = ItemManager.getInstance().createGift(receivingUserDetails, player.getDetails(), item.getSaleCode(), StringUtil.filterInput(presentNote, false), extraData, amount);//new Item();
             /*present.setOwnerId(receivingUserDetails.getId());
             present.setDefinitionId(ItemManager.getInstance().getDefinitionBySprite("present_gen" + ThreadLocalRandom.current().nextInt(1, 7)).getId());
             present.setCustomData(saleCode +

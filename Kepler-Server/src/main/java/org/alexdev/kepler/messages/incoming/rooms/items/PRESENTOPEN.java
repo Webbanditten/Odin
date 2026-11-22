@@ -46,6 +46,11 @@ public class PRESENTOPEN implements MessageEvent {
         String receivedFrom = presentData[1];
         String extraData = presentData[3];
         long timestamp= Long.parseLong(presentData[4]);
+        // A present bought with an amount (the web client's catalogue) holds that many: the 6th field.
+        int amount = 1;
+        if (presentData.length > 5 && StringUtils.isNumeric(presentData[5]) && presentData[5].length() <= 4) {
+            amount = Math.max(1, Math.min(CatalogueManager.maxPurchaseAmount(), Integer.parseInt(presentData[5])));
+        }
 
         //System.out.println("Present data: " + String.join(",", presentData));
         //System.out.println("Custom data: " + item.getCustomData());
@@ -92,15 +97,25 @@ public class PRESENTOPEN implements MessageEvent {
             room.getMapping().removeItem(item);
 
             item.setDefinitionId(catalogueItem.getDefinition().getId());
-            item.setCustomData(extraData);
+            // "-" is the client's "no purchase data": the furni gets what a bought one has, so it stacks with them
+            item.setCustomData("-".equals(extraData) ? "" : extraData);
             item.save();
 
             player.send(new DELIVER_PRESENT(catalogueItem.getDefinition().getSprite(), extraData, catalogueItem.getDefinition().getColour()));
 
             player.getInventory().addItem(item);
+
+            // the present itself became the first one
+            for (int i = 1; i < amount; i++) {
+                CatalogueManager.getInstance().purchase(player, catalogueItem, extraData, receivedFrom, timestamp);
+            }
+
             player.getInventory().getView("new");
         } else {
-            List<Item> itemList = CatalogueManager.getInstance().purchase(player, catalogueItem, extraData, receivedFrom, timestamp);
+            List<Item> itemList = new ArrayList<>();
+            for (int i = 0; i < amount; i++) {
+                itemList.addAll(CatalogueManager.getInstance().purchase(player, catalogueItem, extraData, receivedFrom, timestamp));
+            }
 
             if (!itemList.isEmpty()) {
                 var giftedItem = itemList.get(0);

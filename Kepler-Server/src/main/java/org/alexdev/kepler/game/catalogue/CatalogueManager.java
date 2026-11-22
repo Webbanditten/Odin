@@ -7,6 +7,7 @@ import org.alexdev.kepler.game.item.ItemManager;
 import org.alexdev.kepler.game.item.base.ItemBehaviour;
 import org.alexdev.kepler.game.item.base.ItemDefinition;
 import org.alexdev.kepler.game.item.interactors.InteractionType;
+import org.alexdev.kepler.util.config.GameConfiguration;
 import org.alexdev.kepler.game.pets.PetManager;
 import org.alexdev.kepler.game.player.Player;
 import org.alexdev.kepler.messages.outgoing.user.currencies.FILM;
@@ -29,6 +30,11 @@ public class CatalogueManager {
         this.cataloguePackageList = CatalogueDao.getPackages();
         this.catalogueItemList = CatalogueDao.getItems();
         this.loadPackages();
+    }
+
+    /** Most of one catalogue item a purchase (or a gift) may hold: {@code catalogue.purchase.amount.max}, at least 1. */
+    public static int maxPurchaseAmount() {
+        return Math.max(1, GameConfiguration.getInstance().getInteger("catalogue.purchase.amount.max"));
     }
 
     /**
