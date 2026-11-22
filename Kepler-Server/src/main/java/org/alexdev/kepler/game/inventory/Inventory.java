@@ -18,7 +18,10 @@ public class Inventory {
     private Player player;
     private List<Item> items;
 
-    private Map<Integer, List<Item>> paginatedItems;
+    /** The hand's pages: up to nine stacks each (with stacks off, every stack is one item). */
+    private Map<Integer, List<List<Item>>> paginatedItems;
+    private int stackCount;
+    private boolean stacked;
     private int handStripPageIndex;
 
     public Inventory(Player player) {
@@ -81,7 +84,11 @@ public class Inventory {
         }
 
         this.items.sort(Comparator.comparingInt(Item::getOrderId));
-        this.paginatedItems = StringUtil.paginate(tempList, MAX_ITEMS_PER_PAGE);
+
+        this.stacked = HandStacks.enabled();
+        List<List<Item>> stacks = HandStacks.group(tempList, HandStacks.size());
+        this.stackCount = stacks.size();
+        this.paginatedItems = StringUtil.paginate(stacks, MAX_ITEMS_PER_PAGE);
     }
 
     /**
@@ -93,25 +100,35 @@ public class Inventory {
         this.refreshPagination();
         this.changeView(stripView);
 
-        Map<Integer, Item> casts = this.getCasts();
+        Map<Integer, List<Item>> casts = this.getCasts();
         this.player.send(new INVENTORY(this, casts));
     }
 
     /**
-     * Get the inventory casts for opening hand.
+     * Get the inventory casts for opening hand: the current page's stacks by their place in the hand.
      */
-    private Map<Integer,Item> getCasts() {
-        Map<Integer, Item> casts = new LinkedHashMap<>();
+    private Map<Integer, List<Item>> getCasts() {
+        Map<Integer, List<Item>> casts = new LinkedHashMap<>();
 
         if (this.paginatedItems.containsKey(this.handStripPageIndex)) {
             int stripSlotId = (this.handStripPageIndex * MAX_ITEMS_PER_PAGE);
 
-            for (Item item : this.paginatedItems.get(this.handStripPageIndex)) {
-                casts.put(stripSlotId++, item);
+            for (List<Item> stack : this.paginatedItems.get(this.handStripPageIndex)) {
+                casts.put(stripSlotId++, stack);
             }
         }
 
         return casts;
+    }
+
+    /** Whether the last hand page was sent as stacks. */
+    public boolean isStacked() {
+        return stacked;
+    }
+
+    /** How many places (stacks) the hand has, over all pages. */
+    public int getStackCount() {
+        return stackCount;
     }
 
     /**
@@ -160,7 +177,28 @@ public class Inventory {
      * @param stripSlotId the slot in the hand
      */
     public static void serialise(NettyResponse response, Item item, int stripSlotId) {
-        response.writeDelimeter("SI", (char) 30);
+        serialise(response, List.of(item), stripSlotId, false);
+    }
+
+    /**
+     * Serialise a hand stack: its first item, with the other items' ids in the first field ("SS,id,id,...")
+     * when the hand is stacked. The 2006 client doesn't read that field ("SI").
+     */
+    public static void serialise(NettyResponse response, List<Item> stack, int stripSlotId, boolean stacked) {
+        Item item = stack.get(0);
+
+        if (stacked) {
+            StringBuilder ids = new StringBuilder("SS");
+
+            for (int i = 1; i < stack.size(); i++) {
+                ids.append(',').append(stack.get(i).getId());
+            }
+
+            response.writeDelimeter(ids.toString(), (char) 30);
+        } else {
+            response.writeDelimeter("SI", (char) 30);
+        }
+
         response.writeDelimeter(item.getId(), (char) 30);
         response.writeDelimeter(stripSlotId, (char) 30);
 
@@ -182,17 +220,12 @@ public class Inventory {
             response.writeDelimeter(item.getCustomData(), (char) 30);
             response.writeDelimeter(item.getDefinition().getColour(), (char) 30);
 
-            String test = item.getDefinition().getSprite();
+            // Recyclable: past the quarantine (a stack only when all of its items are, as the client may hand in any)
             long today = DateUtil.getCurrentTimeSeconds();
-            long ownedSince = item.getOwnedSince();
             long quarantineSeconds = GameConfiguration.getInstance().getInteger("recycler.item.quarantine.seconds");
-            if(today - ownedSince > quarantineSeconds && item.getDefinition().isRecyclable()) {
-                response.writeDelimeter(1, (char) 30);
-            } else {
-                response.writeDelimeter("0", (char) 30);
-            }
-
-
+            boolean recyclable = item.getDefinition().isRecyclable()
+                    && stack.stream().allMatch(x -> today - x.getOwnedSince() > quarantineSeconds);
+            response.writeDelimeter(recyclable ? "1" : "0", (char) 30);
 
             response.writeDelimeter(item.getDefinition().getSprite(), (char) 30);
         }
