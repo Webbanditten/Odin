@@ -31,6 +31,25 @@ public class CatalogueManager {
         this.loadPackages();
     }
 
+    /**
+     * Whether one purchase may buy several of this item: never furni whose purchase carries data (a trophy's
+     * inscription, a pet's name, a wallpaper's pattern), film, decoration, trophies or pet baskets.
+     */
+    public static boolean canBuySeveral(CatalogueItem item, String extraData) {
+        if (extraData != null && !extraData.isEmpty() && !extraData.equals("-")) {
+            return false;
+        }
+        if (item.isPackage()) {
+            return true;
+        }
+        ItemDefinition def = item.getDefinition();
+        if (def == null || def.getSprite().equals("film")) {
+            return false;
+        }
+        return !def.hasBehaviour(ItemBehaviour.DECORATION) && !def.hasBehaviour(ItemBehaviour.PRIZE_TROPHY)
+                && def.getInteractionType() != InteractionType.PET_NEST;
+    }
+
     public List<Item> purchase(Player player, CatalogueItem item, String extraData, String overrideName, long timestamp) throws SQLException {
         List<Item> itemsBought = new ArrayList<>();
 

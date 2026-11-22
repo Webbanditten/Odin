@@ -26,6 +26,7 @@ import org.alexdev.kepler.messages.outgoing.catalogue.PURCHASE_NOT_ALLOWED;
 import org.alexdev.kepler.util.DateUtil;
 import org.alexdev.kepler.util.StringUtil;
 import org.alexdev.kepler.util.config.GameConfiguration;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 import java.util.Optional;
@@ -45,7 +46,18 @@ public class GRPC implements MessageEvent {
             return;
         }
 
-        int price = item.getPrice();
+        // The web client's purchase dialog can ask for several (a 7th line after the gift flag "0"); older clients send
+        // none, and gifts, furni with purchase data (trophies, pets, wallpaper) and film are always one.
+        int amount = 1;
+        if (data.length > 6 && !data[5].equals("1") && StringUtils.isNumeric(data[6]) && data[6].length() <= 4) {
+            int max = Math.max(1, GameConfiguration.getInstance().getInteger("catalogue.purchase.amount.max"));
+            amount = Math.max(1, Math.min(max, Integer.parseInt(data[6])));
+            if (amount > 1 && !CatalogueManager.canBuySeveral(item, data[4])) {
+                amount = 1;
+            }
+        }
+
+        int price = item.getPrice() * amount;
 
         // The item may be on several pages: it can be bought from any page the player may open.
         List<CataloguePage> itemPages = CatalogueManager.getInstance().getCataloguePages().stream().filter(p -> item.hasPage(p.getId())).collect(Collectors.toList());
@@ -129,7 +141,12 @@ public class GRPC implements MessageEvent {
                 extraData = data[4];
             }
 
-            if (CatalogueManager.getInstance().purchase(player, item, extraData, null, DateUtil.getCurrentTimeSeconds()).size() > 0) {
+            int bought = 0;
+            for (int i = 0; i < amount; i++) {
+                bought += CatalogueManager.getInstance().purchase(player, item, extraData, null, DateUtil.getCurrentTimeSeconds()).size();
+            }
+
+            if (bought > 0) {
                 player.getInventory().getView("new");
             }
 
@@ -159,10 +176,12 @@ public class GRPC implements MessageEvent {
         // A per-item type, so the in-game purse names what was bought (external_texts.php has a
         // transaction_system_buy_<id> / _giftbuy_<id> text for every catalogue item).
         PurseDao.logCreditSpend((isGift ? "giftbuy_" : "buy_") + item.getId(), player.getDetails(), -price);
-        PurchaseLogDao.log(player.getDetails(), isGift ? PurchaseLogDao.GIFT : PurchaseLogDao.CATALOGUE, receiverId,
-                item.getId(), item.getDefinition() != null ? item.getDefinition().getId() : null,
-                item.getDefinition() != null && !item.isPackage() ? item.getDefinition().getName() : item.getName(),
-                price, page.get().getFuse());
+        for (int i = 0; i < amount; i++) {
+            PurchaseLogDao.log(player.getDetails(), isGift ? PurchaseLogDao.GIFT : PurchaseLogDao.CATALOGUE, receiverId,
+                    item.getId(), item.getDefinition() != null ? item.getDefinition().getId() : null,
+                    item.getDefinition() != null && !item.isPackage() ? item.getDefinition().getName() : item.getName(),
+                    item.getPrice(), page.get().getFuse());
+        }
         player.send(new CREDIT_BALANCE(player.getDetails()));
     }
 }
