@@ -38,6 +38,7 @@ public enum Fuse {
         ADMINISTRATOR_ACCESS("fuse_administrator_access"),
         ANY_ROOM_CONTROLLER("fuse_any_room_controller"),
         PICK_UP_ANY_FURNI("fuse_pick_up_any_furni"),
+        PUBLIC_ROOM_FURNI("fuse_public_room_furni"), // place, move and pick up furni in public rooms (PublicRoomFurni)
         //SEE_FLAT_IDS("fuse_see_flat_ids"), // USED CLIENT SIDE - NOT SERVER SIDE
         //CREDITS("fuse_credits"), // Not used
         PERFORMANCE("fuse_performance_panel"), // Client side

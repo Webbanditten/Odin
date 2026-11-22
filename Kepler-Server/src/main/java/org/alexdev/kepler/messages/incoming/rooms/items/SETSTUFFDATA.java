@@ -1,5 +1,6 @@
 package org.alexdev.kepler.messages.incoming.rooms.items;
 
+import org.alexdev.kepler.game.room.PublicRoomFurni;
 import org.alexdev.kepler.game.fuserights.Fuse;
 import org.alexdev.kepler.game.item.Item;
 import org.alexdev.kepler.game.item.base.ItemBehaviour;
@@ -22,8 +23,9 @@ public class SETSTUFFDATA implements MessageEvent {
             return;
         }
 
-        // Do not process public room items
-        if (player.getRoomUser().getRoom().isPublicRoom()) {
+        // Public rooms: only furni placed there, switched by public room furni editors; everyone else sees them like the
+        // room's own furniture.
+        if (player.getRoomUser().getRoom().isPublicRoom() && !PublicRoomFurni.mayEdit(player, player.getRoomUser().getRoom())) {
             return;
         }
 
@@ -34,7 +36,7 @@ public class SETSTUFFDATA implements MessageEvent {
 
         Item item = room.getItemManager().getById(itemId);
 
-        if (item == null) {
+        if (item == null || !PublicRoomFurni.isPlaced(item)) {
             return;
         }
 
@@ -57,7 +59,8 @@ public class SETSTUFFDATA implements MessageEvent {
 
         if (item.hasBehaviour(ItemBehaviour.REQUIRES_RIGHTS_FOR_INTERACTION)
                 && !room.hasRights(player.getDetails().getId())
-                && !player.hasFuse(Fuse.ANY_ROOM_CONTROLLER)) {
+                && !player.hasFuse(Fuse.ANY_ROOM_CONTROLLER)
+                && !PublicRoomFurni.mayEdit(player, room)) {
             return;
         }
 

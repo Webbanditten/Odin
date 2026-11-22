@@ -1,5 +1,6 @@
 package org.alexdev.kepler.messages.incoming.rooms.items;
 
+import org.alexdev.kepler.game.room.PublicRoomFurni;
 import org.alexdev.kepler.game.fuserights.Fuse;
 import org.alexdev.kepler.game.item.Item;
 import org.alexdev.kepler.game.item.base.ItemBehaviour;
@@ -20,7 +21,11 @@ public class MOVESTUFF implements MessageEvent {
             return;
         }
 
-        if (!room.hasRights(player.getDetails().getId()) && !player.hasFuse(Fuse.ANY_ROOM_CONTROLLER)) {
+        if (room.isPublicRoom()) {
+            if (!PublicRoomFurni.mayEdit(player, room)) {
+                return;
+            }
+        } else if (!room.hasRights(player.getDetails().getId()) && !player.hasFuse(Fuse.ANY_ROOM_CONTROLLER)) {
             return;
         }
 
@@ -34,8 +39,8 @@ public class MOVESTUFF implements MessageEvent {
             return;
         }
 
-        if (item.hasBehaviour(ItemBehaviour.WALL_ITEM)) {
-            return;
+        if (item.hasBehaviour(ItemBehaviour.WALL_ITEM) || !PublicRoomFurni.isPlaced(item)) {
+            return; // the public room's own furniture never moves
         }
 
         int x = (int) Double.parseDouble(data[1]);

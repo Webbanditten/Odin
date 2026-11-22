@@ -1,5 +1,6 @@
 package org.alexdev.kepler.game.commands.registered;
 
+import org.alexdev.kepler.game.room.PublicRoomFurni;
 import org.alexdev.kepler.dao.mysql.ItemDao;
 import org.alexdev.kepler.game.commands.Command;
 import org.alexdev.kepler.game.entity.Entity;
@@ -30,7 +31,8 @@ public class PickAllCommand extends Command {
             return;
         }
 
-        if (!player.getRoomUser().getRoom().isOwner(player.getDetails().getId()) && !player.hasFuse(Fuse.PICK_UP_ANY_FURNI)) {
+        if (!player.getRoomUser().getRoom().isOwner(player.getDetails().getId()) && !player.hasFuse(Fuse.PICK_UP_ANY_FURNI)
+                && !PublicRoomFurni.mayEdit(player, player.getRoomUser().getRoom())) {
             return;
         }
 
