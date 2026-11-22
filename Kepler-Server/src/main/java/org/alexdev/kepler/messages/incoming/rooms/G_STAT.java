@@ -1,5 +1,8 @@
 package org.alexdev.kepler.messages.incoming.rooms;
 
+import org.alexdev.kepler.messages.outgoing.rooms.moderation.YOUAROWNER;
+import org.alexdev.kepler.messages.outgoing.rooms.moderation.YOUARECONTROLLER;
+import org.alexdev.kepler.game.room.PublicRoomFurni;
 import org.alexdev.kepler.game.room.managers.RoomEntityManager;
 import org.alexdev.kepler.game.games.Game;
 import org.alexdev.kepler.game.item.Item;
@@ -52,6 +55,10 @@ public class G_STAT implements MessageEvent {
         // Only refresh rights when in private room
         if (!room.isPublicRoom()) {
             room.refreshRights(player);
+        } else if (PublicRoomFurni.mayEdit(player, room)) {
+            // public room furni editors: the client's info stand and object mover follow these flags
+            player.send(new YOUARECONTROLLER());
+            player.send(new YOUAROWNER());
         }
 
         // The room photographer is never shown to others (RoomEntityManager.seenBy).

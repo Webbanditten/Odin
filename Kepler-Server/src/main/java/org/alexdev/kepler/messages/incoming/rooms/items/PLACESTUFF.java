@@ -1,5 +1,6 @@
 package org.alexdev.kepler.messages.incoming.rooms.items;
 
+import org.alexdev.kepler.game.room.PublicRoomFurni;
 import org.alexdev.kepler.dao.mysql.ItemDao;
 import org.alexdev.kepler.game.fuserights.Fuse;
 import org.alexdev.kepler.game.item.Item;
@@ -27,7 +28,13 @@ public class PLACESTUFF implements MessageEvent {
             return;
         }
 
-        if (!room.hasRights(player.getDetails().getId()) && !player.hasFuse(Fuse.ANY_ROOM_CONTROLLER)) {
+        boolean publicRoom = room.isPublicRoom();
+
+        if (publicRoom) {
+            if (!PublicRoomFurni.mayEdit(player, room)) {
+                return;
+            }
+        } else if (!room.hasRights(player.getDetails().getId()) && !player.hasFuse(Fuse.ANY_ROOM_CONTROLLER)) {
             return;
         }
 
@@ -47,6 +54,14 @@ public class PLACESTUFF implements MessageEvent {
         Item item = player.getInventory().getItem(itemId);
 
         if (item == null) {
+            return;
+        }
+
+        if (publicRoom && !PublicRoomFurni.canPlace(item)) {
+            // the client already took it off the hand: give the hand back (same page) and say why
+            player.getInventory().getView("update");
+            String text = TextsManager.getInstance().getValue("public_room_furni_refused");
+            player.send(new ALERT(text.isEmpty() ? "This furni can't be placed in a public room." : text));
             return;
         }
 

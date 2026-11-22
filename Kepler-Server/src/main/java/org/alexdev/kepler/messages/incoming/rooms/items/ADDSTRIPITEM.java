@@ -1,5 +1,6 @@
 package org.alexdev.kepler.messages.incoming.rooms.items;
 
+import org.alexdev.kepler.game.room.PublicRoomFurni;
 import org.alexdev.kepler.game.fuserights.Fuse;
 import org.alexdev.kepler.game.item.Item;
 import org.alexdev.kepler.game.item.base.ItemBehaviour;
@@ -18,7 +19,7 @@ public class ADDSTRIPITEM implements MessageEvent {
             return;
         }
 
-        if (!room.isOwner(player.getDetails().getId()) && !player.hasFuse(Fuse.PICK_UP_ANY_FURNI)) {
+        if (!room.isOwner(player.getDetails().getId()) && !player.hasFuse(Fuse.PICK_UP_ANY_FURNI) && !PublicRoomFurni.mayEdit(player, room)) {
             return;
         }
 
@@ -35,6 +36,10 @@ public class ADDSTRIPITEM implements MessageEvent {
 
         if (item.hasBehaviour(ItemBehaviour.POST_IT)) {
             return; // The client does not allow picking up post-it's, thus neither will the server
+        }
+
+        if (!PublicRoomFurni.isPlaced(item)) {
+            return; // the public room's own furniture
         }
 
         item.setOwnerId(player.getDetails().getId());
