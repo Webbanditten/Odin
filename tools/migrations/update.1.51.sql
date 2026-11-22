@@ -6,7 +6,7 @@ INSERT IGNORE INTO rank_rights (rank_id, fuse)
     SELECT rank_id, 'fuse_public_room_furni' FROM rank_rights WHERE fuse = 'fuse_any_room_controller';
 -- shown when the furni can't stand in a public room (wall items, teleporters, rollers, pets, presents, ...)
 INSERT IGNORE INTO external_texts (entry, text)
-    VALUES ('public_room_furni_refused', 'Det møbel kan ikke stilles i et offentligt rum.');
+    VALUES ('public_room_furni_refused', 'Dette møbel kan ikke stilles i et fællesrum.');
 
 -- Rollback:
 -- DELETE FROM rank_rights WHERE fuse = 'fuse_public_room_furni';
