@@ -147,6 +147,14 @@ public class SETSTUFFDATA implements MessageEvent {
         item.setCustomData(newData);
         item.updateStatus();
 
+        if (item.hasBehaviour(ItemBehaviour.ELEVATION)) {
+            // An elevation block's height is its state (Item.getElevation). The tile gets its new height at once, and
+            // whoever stands on it goes up or down with it; before, they stayed at the old height (inside the block
+            // or in the air) until they walked, and the path finder went by the old height too.
+            room.getMapping().regenerateCollisionMap();
+            item.updateEntities(null);
+        }
+
         player.getRoomUser().setLastItemInteraction(item);
 
         if (!item.getDefinition().hasBehaviour(ItemBehaviour.CUSTOM_DATA_TRUE_FALSE)) {
