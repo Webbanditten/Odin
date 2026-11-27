@@ -36,27 +36,11 @@ public class GRPC implements MessageEvent {
     @Override
     public void handle(Player player, NettyRequest reader) throws Exception {
         String content = reader.contents();
-
-        if (player.hasNewCatalogue() && content.indexOf((char) 13) < 0) {
-            // v31 catalogue (hh_cat_new): page id, offer id, extra parameter, as gift[, receiver, message]
-            reader.readInt();
-            CatalogueItem item = CatalogueManager.getInstance().getCatalogueItemById(reader.readInt());
-            String extraData = reader.readString();
-            boolean isGift = reader.readInt() == 1;
-            String receiver = isGift ? reader.readString() : null;
-            String note = isGift ? reader.readString() : null;
-
-            if (item == null || item.isHidden()) {
-                return;
-            }
-
-            this.purchase(player, item, extraData, isGift, receiver, note, 1);
-            return;
-        }
-
-        // Old catalogue: production / page / language / sale code / extra / gift / receiver / message, CR separated
         String[] data = content.split(Character.toString((char) 13));
-        CatalogueItem item = CatalogueManager.getInstance().getCatalogueItem(data[3]);
+
+        String saleCode = data[3];
+
+        CatalogueItem item = CatalogueManager.getInstance().getCatalogueItem(saleCode);
 
         if (item == null) {
             return;
@@ -76,11 +60,6 @@ public class GRPC implements MessageEvent {
             }
         }
 
-        String extra = data.length > 4 ? data[4] : "";
-        this.purchase(player, item, extra, giftOrder, giftOrder && data.length > 6 ? data[6] : null, giftOrder && data.length > 7 ? data[7] : null, amount);
-    }
-
-    private void purchase(Player player, CatalogueItem item, String requestExtraData, boolean isGift, String receiverName, String requestNote, int amount) throws Exception {
         int price = item.getPrice() * amount;
 
         // The item may be on several pages: it can be bought from any page the player may open.
@@ -103,25 +82,33 @@ public class GRPC implements MessageEvent {
         }
 
         if (price > player.getDetails().getCredits()) {
-            player.send(new NO_CREDITS(player.hasNewCatalogue()));
+            player.send(new NO_CREDITS());
             return;
         }
 
-        if (isGift) { // It's a gift!
-            PlayerDetails receivingUserDetails = PlayerManager.getInstance().getPlayerData(PlayerDao.getId(receiverName));
+        if (data[5].equals("1")) { // It's a gift!
+            PlayerDetails receivingUserDetails = PlayerManager.getInstance().getPlayerData(PlayerDao.getId(data[6]));
 
+            //if (!data[6].toLowerCase().equals(player.getDetails().getName().toLowerCase())) {
             if (receivingUserDetails == null) {
-                player.send(new NO_USER_FOUND(receiverName));
+                player.send(new NO_USER_FOUND(data[6]));
                 return;
             }
+            //}
 
-            String presentNote = requestNote == null ? "" : requestNote;
-            String extraData = requestExtraData == null ? "" : requestExtraData;
+            String presentNote = "";
+            String extraData = data[4];
+
+            try {
+                presentNote = data[7];
+            } catch (Exception ignored) {
+                presentNote = "";
+            }
 
             if (presentNote.isEmpty()) {
                 presentNote = " ";
             }
-
+            
             extraData = extraData.replace(Item.PRESENT_DELIMETER, "");
             presentNote = presentNote.replace(Item.PRESENT_DELIMETER, "");
 
@@ -129,21 +116,32 @@ public class GRPC implements MessageEvent {
                 extraData = String.valueOf(item.getItemSpecialId());
             }
 
-            Item present = ItemManager.getInstance().createGift(receivingUserDetails, player.getDetails(), item.getSaleCode(), StringUtil.filterInput(presentNote, false), extraData, amount);
+            Item present = ItemManager.getInstance().createGift(receivingUserDetails, player.getDetails(), item.getSaleCode(), StringUtil.filterInput(presentNote, false), extraData, amount);//new Item();
+            /*present.setOwnerId(receivingUserDetails.getId());
+            present.setDefinitionId(ItemManager.getInstance().getDefinitionBySprite("present_gen" + ThreadLocalRandom.current().nextInt(1, 7)).getId());
+            present.setCustomData(saleCode +
+                    Item.PRESENT_DELIMETER + player.getDetails().getName() +
+                    Item.PRESENT_DELIMETER + StringUtil.filterInput(presentNote, true) +
+                    Item.PRESENT_DELIMETER + extraData +
+                    Item.PRESENT_DELIMETER + DateUtil.getCurrentTimeSeconds());
+
+            ItemDao.newItem(present);*/
 
             Player receiver = PlayerManager.getInstance().getPlayerById(receivingUserDetails.getId());
 
             if (receiver != null) {
                 receiver.getInventory().addItem(present);
                 receiver.getInventory().getView("last");
+                //receiver.send(new ITEM_DELIVERED());
             }
 
             player.send(new ALERT(TextsManager.getInstance().getValue("successfully_purchase_gift_for").replace("%user%", receivingUserDetails.getName())));
+            //player.send(new DELIVER_PRESENT(present));
         } else {
             String extraData = null;
 
             if (!item.isPackage()) {
-                extraData = requestExtraData;
+                extraData = data[4];
             }
 
             int bought = 0;
@@ -169,10 +167,11 @@ public class GRPC implements MessageEvent {
             }
         }
 
+        boolean isGift = data[5].equals("1");
         Integer receiverId = null;
 
         if (isGift) {
-            int id = PlayerDao.getId(receiverName);
+            int id = PlayerDao.getId(data[6]);
             receiverId = id > 0 ? id : null;
         }
 
