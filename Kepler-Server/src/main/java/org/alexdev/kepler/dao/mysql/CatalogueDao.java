@@ -35,7 +35,6 @@ public class CatalogueDao {
                         row.getBoolean("is_club_only"), row.getString("name_index"), row.getString("link_list"), row.getString("name"),
                         row.getString("layout"), row.getString("image_headline"), row.getString("image_teasers"), row.getString("body"),
                         row.getString("label_pick"), row.getString("label_extra_s"), row.getString("label_extra_t"));
-                page.setTree(row.getInt("parent_id"), row.getInt("tree_order"), row.getInt("icon"), row.getInt("colour"), row.getString("layout_v31"));
 
                 pages.add(page);
             }
@@ -51,35 +50,6 @@ public class CatalogueDao {
         return pages;
     }
 
-
-    /**
-     * Names of the page images that come from the image library (catalogue_library_images, kept by the CMS).
-     */
-    public static java.util.Set<String> getLibraryImages() {
-        java.util.Set<String> names = new java.util.HashSet<>();
-
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        ResultSet row = null;
-
-        try {
-            conn = Storage.getStorage().getConnection();
-            stmt = Storage.getStorage().prepare("SELECT name FROM catalogue_library_images", conn);
-            row = stmt.executeQuery();
-
-            while (row.next()) {
-                names.add(row.getString("name"));
-            }
-        } catch (Exception e) {
-            Storage.logError(e);
-        } finally {
-            Storage.closeSilently(row);
-            Storage.closeSilently(stmt);
-            Storage.closeSilently(conn);
-        }
-
-        return names;
-    }
 
     /**
      * Get the catalogue item by item definition id.
