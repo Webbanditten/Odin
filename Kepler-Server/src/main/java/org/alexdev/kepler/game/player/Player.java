@@ -74,6 +74,9 @@ public class Player extends Entity {
     private boolean disconnected;
     private boolean pingOK;
     private long lastPing;
+    // Which catalogue the client runs: null until it asks for the index, TRUE for the v31 one (hh_cat_new),
+    // FALSE for the old one (hh_cat_code). See GCIX.
+    private Boolean newCatalogue;
 
     public Player(NettyPlayerNetwork nettyPlayerNetwork) {
         this.network = nettyPlayerNetwork;
@@ -376,6 +379,19 @@ public class Player extends Entity {
      */
     public boolean isLoggedIn() {
         return loggedIn;
+    }
+
+    public boolean hasNewCatalogue() {
+        return Boolean.TRUE.equals(newCatalogue);
+    }
+
+    /** null while the client hasn't asked for the catalogue index yet. */
+    public Boolean getNewCatalogue() {
+        return newCatalogue;
+    }
+
+    public void setNewCatalogue(Boolean newCatalogue) {
+        this.newCatalogue = newCatalogue;
     }
 
     /**
