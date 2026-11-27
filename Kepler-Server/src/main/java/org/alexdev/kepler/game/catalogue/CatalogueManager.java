@@ -10,6 +10,8 @@ import org.alexdev.kepler.game.item.interactors.InteractionType;
 import org.alexdev.kepler.util.config.GameConfiguration;
 import org.alexdev.kepler.game.pets.PetManager;
 import org.alexdev.kepler.game.player.Player;
+import org.alexdev.kepler.messages.outgoing.catalogue.CATALOGUE_INDEX_V31;
+import org.alexdev.kepler.messages.outgoing.catalogue.CATALOGUE_PAGES;
 import org.alexdev.kepler.messages.outgoing.user.currencies.FILM;
 import org.alexdev.kepler.util.DateUtil;
 import org.alexdev.kepler.util.StringUtil;
@@ -24,12 +26,34 @@ public class CatalogueManager {
     private List<CataloguePage> cataloguePageList;
     private List<CatalogueItem> catalogueItemList;
     private List<CataloguePackage> cataloguePackageList;
+    private java.util.Set<String> libraryImages;
+    private java.util.Set<String> sharedSaleCodes;
 
     public CatalogueManager() {
         this.cataloguePageList = CatalogueDao.getPages();
         this.cataloguePackageList = CatalogueDao.getPackages();
         this.catalogueItemList = CatalogueDao.getItems();
+        this.libraryImages = CatalogueDao.getLibraryImages();
         this.loadPackages();
+
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        this.sharedSaleCodes = new java.util.HashSet<>();
+
+        for (CatalogueItem item : this.catalogueItemList) {
+            if (!seen.add(item.getSaleCode())) {
+                this.sharedSaleCodes.add(item.getSaleCode());
+            }
+        }
+    }
+
+    /**
+     * The name of a catalogue item's offer in the v31 catalogue: its sale code, or "<sale code>_<item id>" when other
+     * items share that sale code (all wallpapers are "wallpaper", landscapes "landscape"). The client groups a page's
+     * offers by name (one group = one product in several currencies), so shared names would merge different products
+     * into one: the spaces page kept only its first wallpaper. The CMS's productdata names them the same way.
+     */
+    public String getV31OfferName(CatalogueItem item) {
+        return this.sharedSaleCodes.contains(item.getSaleCode()) ? item.getSaleCode() + "_" + item.getId() : item.getSaleCode();
     }
 
     /** Most of one catalogue item a purchase (or a gift) may hold: {@code catalogue.purchase.amount.max}, at least 1. */
@@ -54,6 +78,11 @@ public class CatalogueManager {
         }
         return !def.hasBehaviour(ItemBehaviour.DECORATION) && !def.hasBehaviour(ItemBehaviour.PRIZE_TROPHY)
                 && def.getInteractionType() != InteractionType.PET_NEST;
+    }
+
+    /** Page images that come from the image library (see catalogue_library_images). */
+    public java.util.Set<String> getLibraryImages() {
+        return libraryImages;
     }
 
     public List<Item> purchase(Player player, CatalogueItem item, String extraData, String overrideName, long timestamp) throws SQLException {
@@ -304,6 +333,39 @@ public class CatalogueManager {
         }
 
         return cataloguePagesForRank;
+    }
+
+    /**
+     * Send the catalogue index the player's client understands: the v31 tree (hh_cat_new) or the old list.
+     */
+    public void sendIndex(Player player) {
+        List<CataloguePage> pages = this.getPagesForRank(player.getDetails().getFuseRights(), player.getDetails().hasClubSubscription());
+
+        if (player.hasNewCatalogue()) {
+            player.send(new CATALOGUE_INDEX_V31(pages));
+        } else {
+            // The old catalogue has a flat index: v31 folders (pages without a layout) aren't pages there.
+            player.send(new CATALOGUE_PAGES(pages.stream().filter(CataloguePage::isNavigatable).toList()));
+        }
+    }
+
+    /**
+     * Whether the player may open the page: its fuse, and Habbo Club for club pages.
+     */
+    public boolean canOpen(Player player, CataloguePage page) {
+        if (page.isClubOnly() && !player.getDetails().hasClubSubscription()) {
+            return false;
+        }
+
+        return player.getDetails().getFuseRights().stream().anyMatch(r -> r.getFuse().equalsIgnoreCase(page.getFuse()));
+    }
+
+    public CataloguePage getCataloguePageById(int id) {
+        return this.cataloguePageList.stream().filter(p -> p.getId() == id).findFirst().orElse(null);
+    }
+
+    public CatalogueItem getCatalogueItemById(int id) {
+        return this.catalogueItemList.stream().filter(i -> i.getId() == id).findFirst().orElse(null);
     }
 
     /**
