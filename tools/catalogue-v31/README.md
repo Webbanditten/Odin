@@ -1,16 +1,25 @@
-# The v31 catalogue (parked)
+# The v31 catalogue, next to the classic one
 
 Habbo r31's catalogue (`hh_cat_new`): a tree index with coloured nodes, icons and folders, a 3x3 product strip, and
-the old special pages (Plastic, spaces, trophies, pets, recycler, Trax, purse) wrapped. This branch lets Odin serve it
-next to the old catalogue, so the web client can run it while Shockwave keeps the old one.
+the old special pages (Plastic, spaces, trophies, pets, recycler, Trax, purse) wrapped. Odin serves it next to the
+classic catalogue (`hh_cat_code`) on the same headers and answers each client in its catalogue's format.
 
-It was live in the web client on 2026-11-17 from about 13:45 to 14:10 (Odin v1.25.12) and rolled back at Patrick's
-request. `master` has the revert (#48, released as v1.25.13 = v1.25.11's code). The work is kept here:
+**Since 2026-11-27 both are in the hotel** (this branch was reapplied onto master as `feature/catalogue-choice`): a
+player picks one on the website's profile ("Katalog" tab; OdinCMS `Services/CatalogueChoice.cs`), and the client
+page hands a v31 player the variables wrapper `gamedata/external_vars_v31.php`, which swaps the catalogue casts (both
+clients, Shockwave and the web client). Who may pick is the CMS setting `cms.catalogue.choice` (off / staff /
+everyone). The two share pages, products and prices, but not their order: the classic index is `order_id`, the v31
+tree `parent_id` + `tree_order` (`update.1.53.sql`), arranged in Housekeeping's catalogue editor (Index > v31 tree).
+Deploy files and the starting tree: the workspace's `prod-staging/catalogue-choice/`.
+
+Before that it was live in the web client only, on 2026-11-17 from about 13:45 to 14:10 (Odin v1.25.12), and rolled
+back at Patrick's request (#48). That first tree script rewrote `order_id`, which moved the classic catalogue's pages
+too; the rollback restored it.
 
 | Repo | Branch | What |
 |---|---|---|
-| Odin | `feature/catalogue-v31` | This folder; the protocol; `tools/migrations/update.1.40.sql` |
-| OdinCMS | `feature/catalogue-v31` | `/gamedata/furnidata` + `/gamedata/productdata`, the editor's tree fields, an unfinished v31 preview (`tools/catalogue/V31.md`) |
+| Odin | `feature/catalogue-choice` | This folder; the protocol; `update.1.40.sql`, `update.1.53.sql` |
+| OdinCMS | `feature/catalogue-choice` | `/gamedata/furnidata` + `/gamedata/productdata`, the editor's tree fields and Index > v31 tree, the v31 preview, the profile's Katalog tab (`tools/catalogue/V31.md`) |
 | habbo-vibe-playground (Forgejo) | `feat/v31-catalogue-tools` | Cast tools: `renameNames`, `addScript`, `replaceText`, `replaceBitmap`, `dumpCast` |
 
 ## How it works
@@ -48,11 +57,14 @@ request. `master` has the revert (#48, released as v1.25.13 = v1.25.11's code). 
   `Player` remembers the catalogue type; reloads go only to players whose type is known.
 - v31 index (126, `CATALOGUE_INDEX_V31`): a tree; each node visible (always 1: it means "draw it"), colour, icon,
   page id (-1 for a folder), name, disabled, children. A page whose parent the player can't see goes to the top.
+  Siblings go by `tree_order`; pages not placed in the tree (0) follow the placed ones in `order_id` order.
 - v31 page (127, `CATALOGUE_PAGE_V31`): layout, images[], texts[] mapped from our page fields per v31 layout (the
   `layout.fields.*` variables of hh_cat_new, see `CataloguePage.getV31Texts/getV31Images`); product layouts become
   `default_3x3`; `layout_v31` overrides. Offers: item id, sale code (productdata key), credits, 0 pixels, products
   (type, definition id = furnidata class id, extra, count, -1).
-- GRPC (100) parses both formats into one purchase path; `NO_CREDITS` sends credits and pixels to v31.
+- GRPC (100) parses both formats into one purchase path (page fuse, Habbo Club refusal, purchase log, gifts); the
+  classic catalogue's "buy several" line (`hh_cat_code_amount`) has no v31 counterpart, so v31 buys one at a time.
+  `NO_CREDITS` sends credits and pixels to v31.
 - Offer names (`CatalogueManager.getV31OfferName`): the sale code, or `<sale code>_<item id>` when several catalogue items
   share it. The client groups a page's offers by name (one group = one product in several currencies), so the 31
   `wallpaper` and 12 `landscape` items collapsed into one each and the wallpaper picker had a single pattern. The CMS's

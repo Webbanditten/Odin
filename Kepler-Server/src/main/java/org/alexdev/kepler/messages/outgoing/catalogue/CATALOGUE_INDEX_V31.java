@@ -4,6 +4,7 @@ import org.alexdev.kepler.game.catalogue.CataloguePage;
 import org.alexdev.kepler.messages.types.MessageComposer;
 import org.alexdev.kepler.server.netty.streams.NettyResponse;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -35,7 +36,11 @@ public class CATALOGUE_INDEX_V31 extends MessageComposer {
     }
 
     private void writeChildren(NettyResponse response, int parentId) {
-        List<CataloguePage> children = this.pages.stream().filter(p -> this.parentOf(p) == parentId).toList();
+        // The pages come in order_id order; the tree goes by tree_order, and pages not placed in it (0) follow the
+        // placed ones in that order (a page added by a script shows up at the end of its folder, not at the top).
+        List<CataloguePage> children = this.pages.stream().filter(p -> this.parentOf(p) == parentId)
+                .sorted(Comparator.comparingInt((CataloguePage p) -> p.getTreeOrder() > 0 ? 0 : 1).thenComparingInt(CataloguePage::getTreeOrder))
+                .toList();
         response.writeInt(children.size());
 
         for (CataloguePage page : children) {

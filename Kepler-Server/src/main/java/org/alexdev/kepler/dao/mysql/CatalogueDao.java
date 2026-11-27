@@ -35,7 +35,7 @@ public class CatalogueDao {
                         row.getBoolean("is_club_only"), row.getString("name_index"), row.getString("link_list"), row.getString("name"),
                         row.getString("layout"), row.getString("image_headline"), row.getString("image_teasers"), row.getString("body"),
                         row.getString("label_pick"), row.getString("label_extra_s"), row.getString("label_extra_t"));
-                page.setTree(row.getInt("parent_id"), row.getInt("icon"), row.getInt("colour"), row.getString("layout_v31"));
+                page.setTree(row.getInt("parent_id"), row.getInt("tree_order"), row.getInt("icon"), row.getInt("colour"), row.getString("layout_v31"));
 
                 pages.add(page);
             }

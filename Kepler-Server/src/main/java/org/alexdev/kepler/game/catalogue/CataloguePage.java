@@ -26,6 +26,9 @@ public class CataloguePage {
 
     // The v31 catalogue (hh_cat_new): a tree of pages with a colour and an icon per node.
     private int parentId = -1;
+    /** Place among its siblings in the v31 tree (tree_order); 0 = not placed: after the placed ones, by order_id. The
+     *  old catalogue's flat index goes by order_id alone, so arranging the tree never moves its pages. */
+    private int treeOrder;
     private int icon;
     private int colour;
     private String layoutV31;
@@ -60,8 +63,9 @@ public class CataloguePage {
         }
     }
 
-    public void setTree(int parentId, int icon, int colour, String layoutV31) {
+    public void setTree(int parentId, int treeOrder, int icon, int colour, String layoutV31) {
         this.parentId = parentId;
+        this.treeOrder = treeOrder;
         this.icon = icon;
         this.colour = colour;
         this.layoutV31 = layoutV31;
@@ -69,6 +73,10 @@ public class CataloguePage {
 
     public int getParentId() {
         return parentId;
+    }
+
+    public int getTreeOrder() {
+        return treeOrder;
     }
 
     /** A page without a layout is a folder in the v31 index: it opens its children, not a page. */
