@@ -4,13 +4,15 @@ Habbo r31's catalogue (`hh_cat_new`): a tree index with coloured nodes, icons an
 the old special pages (Plastic, spaces, trophies, pets, recycler, Trax, purse) wrapped. Odin serves it next to the
 classic catalogue (`hh_cat_code`) on the same headers and answers each client in its catalogue's format.
 
-**Since 2026-11-27 both are in the hotel** (this branch was reapplied onto master as `feature/catalogue-choice`): a
-player picks one on the website's profile ("Katalog" tab; OdinCMS `Services/CatalogueChoice.cs`), and the client
-page hands a v31 player the variables wrapper `gamedata/external_vars_v31.php`, which swaps the catalogue casts (both
-clients, Shockwave and the web client). Who may pick is the CMS setting `cms.catalogue.choice` (off / staff /
-everyone). The two share pages, products and prices, but not their order: the classic index is `order_id`, the v31
-tree `parent_id` + `tree_order` (`update.1.53.sql`), arranged in Housekeeping's catalogue editor (Index > v31 tree).
-Deploy files and the starting tree: the workspace's `prod-staging/catalogue-choice/`.
+**Parked, built for both catalogues side by side** (branch `feature/catalogue-choice`, draft pull request): a player
+picks one on the website's profile ("Katalog" tab; OdinCMS `Services/CatalogueChoice.cs`), and the client page hands a
+v31 player the variables wrapper `gamedata/external_vars_v31.php`, which swaps the catalogue casts (both clients,
+Shockwave and the web client). Who may pick is the CMS setting `cms.catalogue.choice` (off / staff / everyone). The two
+share pages, products and prices, but not their order: the classic index is `order_id`, the v31 tree `parent_id` +
+`tree_order` (`update.1.53.sql`), arranged in Housekeeping's catalogue editor (Index > v31 tree). Deploy files, the
+starting tree and what was tested: the workspace's `prod-staging/catalogue-choice/`. It was deployed on 2026-11-27
+around 12:00 without Patrick asking for it and rolled back 12:25 (Odin v1.41.1 = v1.40.1's code, #74); nobody had
+picked it. To bring it back: merge the draft pull request, then the deploy steps there.
 
 Before that it was live in the web client only, on 2026-11-17 from about 13:45 to 14:10 (Odin v1.25.12), and rolled
 back at Patrick's request (#48). That first tree script rewrote `order_id`, which moved the classic catalogue's pages
